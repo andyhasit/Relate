@@ -1,0 +1,20 @@
+{
+  "name": "Relate",
+  "version": "0.1.1",
+  "description": "A data abstraction framework for CouchDB and Angular JS",
+  "dependencies": {
+    "angular": "^1.4.8"
+  },
+  "devDependencies": {
+    "gulp": "^3.5.6",
+    "gulp-concat": "^2.2.0",
+    "gulp-rename": "^1.2.0",
+    "angular-mocks": "^1.4.8",
+    "jasmine-core": "^2.4.1",
+    "karma": "^0.13.16",
+    "karma-chrome-launcher": "^0.2.2",
+    "karma-jasmine": "^0.3.6",
+    "karma-phantomjs-launcher": "^0.2.2",
+    "phantomjs": "^1.9.19"
+  }
+}
