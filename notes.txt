@@ -1,0 +1,36 @@
+
+Should ChildrenOfParentCollection be passed it's ParentOfChildCollection?
+So that it can find which indexEntry has a child.
+  - so it can do the unlinking from existing parent itself in .link()
+  - so it can do the unlinking when told to .forget() // which will to a type check on the item that it is asked to forget.
+  
+That way, collections can be told of relationships they need to call forget() on when an item is deleted.
+
+projects.registerRelationship()
+
+So when it deletes an item, it goes via the relationship object, which deletes all the child items and removes references from lnk collections.
+
+
+So if a task exists in a project, and in a schedule, we tell the task collection about those relationships.
+When a project is deleted, it informs the task-project relationship, which:
+    recognising it as the parent in the relationship, calls task collection.delete() on each task, which
+        informs the task-project relationship, which:
+            recognising it as the child, unlinks itself by deleting records in both collections.
+            
+            
+            
+            (no child
+    unlinks the tasks from their project 
+    
+    
+    deletes all the tasks, which each:
+        informs the relat
+
+maybe have a flag to indicate if in a cascade delete operation, in which case, child items don't bother deleting themselves from childrenOfParent collection
+as that entry will be deleted anyway (and it would create lots of db operations.
+
+Can certain collections be lazy loaded? Like notes? In that case may we need a one-to-one relationship? And if this is the case we'd load by query, not allDocs.
+
+
+        
+        

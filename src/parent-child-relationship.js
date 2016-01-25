@@ -9,26 +9,11 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
 
   var ParentChildRelationship = function(db, parentCollection, childCollection, options) {
     this._db = db;
-    this.parentOfChildCollection = new ParentOfChildCollection(db, parentCollection, childCollection, options);
-    this.childrenOfParentCollection = new ChildrenOfParentCollection(db, parentCollection, childCollection, options);
-    this.parent_of_child_records = [];
     this.parentCollection = parentCollection;
     this.childCollection = childCollection;
+    this.parentOfChildCollection = new ParentOfChildCollection(db, parentCollection, childCollection, options);
+    this.childrenOfParentCollection = new ChildrenOfParentCollection(db, parentCollection, childCollection, options);
     this._setNames(options);
-    this._createGetParentFunction();
-    this._createGetChildrenFunction();
-    
-    //e.g. project_tasks
-    
-    
-    parentChildFunctionName = 'get' + capitalize(parentCollection.name) + pluralCapitalised(childCollection.name);
-      //e.g. getProjectTasks
-      self[parentChildFunctionName] = function(parentObject) {
-        var childIds = [];
-        self.items.findAll(
-         
-      };
-  
   };
   
   ParentChildRelationship.prototype.getParent = function (childItem) {
@@ -41,9 +26,10 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
   
   ParentChildRelationship.prototype.link = function (parentItem, childItem) {
     //Sets the parent of the child, unlinking child from previous parent if applicable.
-    childrenOfParentCollection.link(parentItem, childItem);
+    //TODO: deal with parent being null, which is allowed
+    var oldParent = parentOfChildCollection.getParent(childItem); //Can be undefined or null and this is OK.
     parentOfChildCollection.link(parentItem, childItem);
-    
+    childrenOfParentCollection.link(parentItem, childItem, oldParent);
   };
   
   
@@ -64,9 +50,9 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
     // e.g. lnk_project_tasks
     this.collectionName = 'lnk_' + parentName + '_' + childName + 's';
     // e.g. lnk_child_tasks_of_project 
-    this.childrenOfParentTypeIdentifier = 'lnk_child_' + childName + 's_of_' + parentName;
+    this.childrenOfParentCollection.typeIdentifier = 'lnk_child_' + childName + 's_of_' + parentName;
     // e.g. lnk_parent_project_of_task
-    this.parentOfChildTypeIdentifier = 'lnk_parent_' + parentName + '_of_' + childName; 
+    this.parentOfChildCollection.typeIdentifier = 'lnk_parent_' + parentName + '_of_' + childName; 
   };
     
   /*

@@ -22,15 +22,15 @@ angular.module('Relate').service('data', function($q, Collection) {
     */
     var collection = new Collection(self._db, name, factory, options);
     registerCollection(collection);
-    registerTypeIdentifier(collection.typeIdentifier, collection);
+    registerTypeIdentifier(collection);
     return collection;
   };
   
   self.addParentChildRelationship = function(parentCollection, childCollection, options) {
     var collection = new ParentChildRelationship(self._db, parentCollection, childCollection, options);
     registerCollection(collection);
-    registerTypeIdentifier(collection.childrenOfParentTypeIdentifier, collection);
-    registerTypeIdentifier(collection.parentOfChildTypeIdentifier, collection);
+    registerTypeIdentifier(collection.parentOfChildCollection);
+    registerTypeIdentifier(collection.childrenOfParentCollection);
     return collection;
   };
   
@@ -61,6 +61,7 @@ angular.module('Relate').service('data', function($q, Collection) {
   //RelateBadSetupError.constructor = RelateBadSetupError;
 
   function registerCollection(collection) {
+    //Used for collections and relationships.
     var name = collection.collectionName;
     if (name in self) {
       throw new RelateBadSetupError('Failed to register collection called \"' + name + 
@@ -71,7 +72,8 @@ angular.module('Relate').service('data', function($q, Collection) {
     }
   }
   
-  function registerTypeIdentifier(typeIdentifier, collection) {
+  function registerTypeIdentifier(collection) {
+    var typeIdentifier = collection.typeIdentifier;
     if (typeIdentifier in self._typeIdentifiers) {
       var claimedBy = self._typeIdentifiers[typeIdentifier];
       throw new RelateBadSetupError('Collection \"' + collection.collectionName + '\" tried to register for the typeIdentifier: \"' + typeIdentifier + 
