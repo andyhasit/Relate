@@ -33,10 +33,13 @@ Done:
     tests for Collection with db mock.
     use strict
 Next steps:
+    test ParentOfChildCollection functions
     move repeat code in tests up to beforeEach()
     test ChildrenOfParentCollection functions
-    test ParentOfChildCollection functions
     test ParentOfChildCollection
+    move _fetch
+    test correct type is bieng saved
+    move namin into collections
     
 later:
 

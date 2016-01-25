@@ -27,7 +27,7 @@ angular.module('Relate').service('data', function($q, Collection) {
   };
   
   self.addParentOfChildCollection = function(parentCollection, childCollection, options) {
-    var collection = new ParentOfChildCollection(self._db, parentCollection, childCollection, options);
+    var collection = new ParentChildRelationship(self._db, parentCollection, childCollection, options);
     registerCollection(collection);
     registerTypeIdentifier(collection.parentOfChildCollection);
     registerTypeIdentifier(collection.childrenOfParentCollection);

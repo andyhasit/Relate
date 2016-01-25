@@ -43,7 +43,8 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q) {
     } else {
       var document = {
         parentId: parentItemId, 
-        childId: childItem._id
+        childId: childItem._id,
+        type: this.typeIdentifier
       };
       this._db.post(document).then(function (result) {
         self._fetch(result).then(function (document) {

@@ -54,7 +54,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
       }
     } else {
       //create with post and link.
-      
+      //type: this.typeIdentifier
       //this._index[parentItem._id] = {document
     }
   };

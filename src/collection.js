@@ -35,7 +35,7 @@ angular.module('Relate').factory('Collection', function($q) {
       throw "Error fetching data";
     }
     return this._db.get(result.id);
-  }
+  };
   
   Collection.prototype.add = function(data) {
     var self = this;

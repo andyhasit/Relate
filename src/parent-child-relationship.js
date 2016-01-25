@@ -1,10 +1,10 @@
 
-angular.module('Relate').factory('ParentOfChildCollection', function($q, ParentOfChildCollection, ChildrenOfParentCollection) {
+angular.module('Relate').factory('ParentChildRelationship', function($q, ParentOfChildCollection, ChildrenOfParentCollection) {
   /*
   
   */
 
-  var ParentOfChildCollection = function(db, parentCollection, childCollection, options) {
+  var ParentChildRelationship = function(db, parentCollection, childCollection, options) {
     this._db = db;
     this.parentCollection = parentCollection;
     this.childCollection = childCollection;
@@ -16,21 +16,21 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, ParentO
     this._cascadeDeleteInProgress = false;
   };
   
-  ParentOfChildCollection.prototype.getParent = function (childItem) {
+  ParentChildRelationship.prototype.getParent = function (childItem) {
     return this.parentOfChildCollection.getParent(childItem);
   };
   
-  ParentOfChildCollection.prototype.getChildren = function (parentItem) {
+  ParentChildRelationship.prototype.getChildren = function (parentItem) {
     return this.childrenOfParentCollection.getChildren(parentItem);
   };
   
-  ParentOfChildCollection.prototype.link = function (parentItem, childItem) {
+  ParentChildRelationship.prototype.link = function (parentItem, childItem) {
     //Sets the parent of the child, unlinking child from previous parent if applicable.
-    parentOfChildCollection.link(parentItem, childItem);
-    childrenOfParentCollection.link(parentItem, childItem, oldParent);
+    this.parentOfChildCollection.link(parentItem, childItem);
+    this.childrenOfParentCollection.link(parentItem, childItem, oldParent);
   };
   
-  ParentOfChildCollection.prototype.onRemove = function (item) {
+  ParentChildRelationship.prototype.remove = function (item) {
     /* Gets called when an item is deleted */
     var self = this;
     if (self.isParentType(item)) {
@@ -48,7 +48,7 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, ParentO
     } 
   };
   
-  ParentOfChildCollection.prototype.isParentType = function (item) {
+  ParentChildRelationship.prototype.isParentType = function (item) {
     if (item.type === this.parentCollection.typeIdentifier) {
       return true;
     } else if (item.type === this.parentCollection.typeIdentifier) {
@@ -64,7 +64,7 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, ParentO
     }
   }
   */
-  ParentOfChildCollection.prototype._setNames = function (options) {
+  ParentChildRelationship.prototype._setNames = function (options) {
     //These can be changed in options. Implement later.
     
     // e.g. project
@@ -79,5 +79,5 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, ParentO
     this.parentOfChildCollection.typeIdentifier = 'lnk_parent_' + parentName + '_of_' + childName; 
   };
 
-  return ParentOfChildCollection;
+  return ParentChildRelationship;
 });

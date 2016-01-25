@@ -91,9 +91,7 @@ describe('ParentOfChildCollection', function() {
   
   
   /*
-  getParent
-  _registerDocument
-  link
+
   removeChild
   */
   
