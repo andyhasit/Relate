@@ -7,16 +7,25 @@ angular.module('Relate').factory('Collection', function($q) {
     this._db = db;
     this._factory = factory;
     this.items = [];
+    this._index = {};
     
     //Can be changed in options. Implement later.
     this.itemName = name;
     this.collectionName = name + 's';
     this.typeIdentifier = name;
+    this.relationships = [];
+  };
+  
+  Collection.prototype._registerRelationship = function(relationship) {
+    //Registers a relationship -- internal use.
+    this.relationships.push(relationship);
   };
   
   Collection.prototype._registerDocument = function(document) {
-    //Registers a document in items -- internal use.
-    this.items.push(new this._factory(document));
+    //Registers a document in collection -- internal use.
+    var item = new this._factory(document);
+    this.items.push(item);
+    this._index[document._id] = item;
   };
   
   Collection.prototype._fetch = function(result) {
@@ -33,7 +42,7 @@ angular.module('Relate').factory('Collection', function($q) {
     this._db.post(obj).then(function (result) {
       self._fetch(result);
     }).then(function (document) {
-      self._register(document);
+      self._registerDocument(document);
     });
   };
   
@@ -44,15 +53,19 @@ angular.module('Relate').factory('Collection', function($q) {
     });
   };
   
-  Collection.prototype.delete = function(obj) {
+  Collection.prototype.remove = function(item) {
     var self = this;
-    obj.type = this.typeIdentifier;
-    c.log(obj);
-    this._db.remove(obj).then(function (result) {
-      self._fetch(result);
-    }).then(function (doc) {
-      self._register(doc);
+    angular.forEach(self.relationships, function(relationship) {
+      relationship.removeItem(item);
     });
+    this._db.remove(item).then(function (result) {
+      delete self._index[item._id];
+      self.items.splice(self.items.indexOf(item), 1);//TODO: test this.
+    });
+  };
+  
+  Collection.prototype.getItem = function(id) {
+    return this._index[id];
   };
   
   return Collection;

@@ -12,8 +12,11 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
     this.parentCollection = parentCollection;
     this.childCollection = childCollection;
     this.parentOfChildCollection = new ParentOfChildCollection(db, parentCollection, childCollection, options);
-    this.childrenOfParentCollection = new ChildrenOfParentCollection(db, parentCollection, childCollection, options);
+    this.childrenOfParentCollection = new ChildrenOfParentCollection(db, parentCollection, childCollection, parentOfChildCollection, options);
     this._setNames(options);
+    parentCollection._registerRelationship(this);
+    childCollection._registerRelationship(this);
+    this._cascadeDeleteInProgress = false;
   };
   
   ParentChildRelationship.prototype.getParent = function (childItem) {
@@ -21,18 +24,42 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
   };
   
   ParentChildRelationship.prototype.getChildren = function (parentItem) {
-    return this.childrenOfParentCollection.getChildren(childItem);
+    return this.childrenOfParentCollection.getChildren(parentItem);
   };
   
   ParentChildRelationship.prototype.link = function (parentItem, childItem) {
     //Sets the parent of the child, unlinking child from previous parent if applicable.
-    //TODO: deal with parent being null, which is allowed
-    var oldParent = parentOfChildCollection.getParent(childItem); //Can be undefined or null and this is OK.
     parentOfChildCollection.link(parentItem, childItem);
     childrenOfParentCollection.link(parentItem, childItem, oldParent);
   };
   
+  ParentChildRelationship.prototype.onRemove = function (item) {
+    /* Gets called when an item is deleted */
+    var self = this;
+    if (self.isParentType(item)) {
+      self._cascadeDeleteInProgress = true;
+      angular.forEach(self.getChildren(item), function (childItem) {
+        self.childCollection.remove(childItem);
+      });
+      self.childrenOfParentCollection.removeParent(item);
+      self._cascadeDeleteInProgress = false;
+    } else {
+      self.parentOfChildCollection.removeChild(item);
+      if (!self._cascadeDeleteInProgress) {
+        self.childrenOfParentCollection.removeChild(item);
+      }
+    } 
+  };
   
+  ParentChildRelationship.prototype.isParentType = function (item) {
+    if (item.type === this.parentCollection.typeIdentifier) {
+      return true;
+    } else if (item.type === this.parentCollection.typeIdentifier) {
+      return false;
+    } else {
+      throw {message: "wtf?"}; //TODO - change.
+    }
+  };
   /*
   for(var i = array.length - 1; i >= 0; i--) {
     if(array[i] === number) {

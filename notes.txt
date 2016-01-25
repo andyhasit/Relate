@@ -29,7 +29,15 @@ When a project is deleted, it informs the task-project relationship, which:
 maybe have a flag to indicate if in a cascade delete operation, in which case, child items don't bother deleting themselves from childrenOfParent collection
 as that entry will be deleted anyway (and it would create lots of db operations.
 
-Can certain collections be lazy loaded? Like notes? In that case may we need a one-to-one relationship? And if this is the case we'd load by query, not allDocs.
+
+Next steps:
+    test ParentOfChildCollection functions
+    
+later:
+
+    get delete registering
+    Can certain collections be lazy loaded? Like notes? In that case may we need a one-to-one relationship? And if this is the case we'd load by query, not allDocs.
+
 
 
         

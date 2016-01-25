@@ -1,6 +1,6 @@
 c = console; 
 
-describe('TestCollection', function() {
+describe('Collection', function() {
   
   beforeEach(module('Relate'));
   
@@ -24,8 +24,8 @@ describe('TestCollection', function() {
   
   it('registers items as the correct objects', function() {
     var collection = new Collection(db, 'project', DummyFactory);
-    collection._register({_id: 123, name: 'test1'});
-    collection._register({_id: 456, name: 'test2'});
+    collection._registerDocument({_id: 123, name: 'test1'});
+    collection._registerDocument({_id: 456, name: 'test2'});
     expect(collection.items.length).toEqual(2);
     expect(collection.items[0]).toEqual(jasmine.any(DummyFactory));
   });
