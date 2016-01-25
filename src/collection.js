@@ -31,25 +31,26 @@ angular.module('Relate').factory('Collection', function($q) {
   Collection.prototype._fetch = function(result) {
     //Fetches a document -- internal use.
     if (!result.ok) {
-      return error(result);
+      console.log(result);
+      throw "Error fetching data";
     }
-    return this._db.get(res.id);
+    return this._db.get(result.id);
   }
   
-  Collection.prototype.add = function(obj) {
+  Collection.prototype.add = function(data) {
     var self = this;
-    obj.type = this.typeIdentifier;
-    this._db.post(obj).then(function (result) {
-      self._fetch(result);
-    }).then(function (document) {
-      self._registerDocument(document);
+    data.type = this.typeIdentifier;
+    this._db.post(data).then(function (result) {
+      self._fetch(result).then(function (document) {
+        self._registerDocument(document);
+      });
     });
   };
   
   Collection.prototype.save = function(item) {
     var self = this;
-    this._db.put(item).then(function (result) {
-      item._rev = result.rev;
+    this._db.put(item.document).then(function (result) {
+      item.document._rev = result.rev;
     });
   };
   

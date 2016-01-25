@@ -3,21 +3,23 @@ c = console;
 describe('Collection', function() {
   
   beforeEach(module('Relate'));
+  beforeEach(module('PouchFake'));
   
-  var Collection;
+  var db, Collection, $rootScope;
   
-  var db = {};
-  
-  beforeEach(inject(function(_Collection_) {
+  beforeEach(inject(function(_Collection_, _$rootScope_, _db_, $q) {
     Collection = _Collection_;
+    $rootScope = _$rootScope_;
+    db = _db_;
   }));
   
-  var DummyFactory = function (doc) {
-    this.doc = doc;
+  var DummyFactory = function (document) {
+    this.document = document;
+    this._id = document._id;
   };
   
-   var DummyFactory2 = function (doc) {
-    this.doc = doc;
+   var DummyFactory2 = function (document) {
+    this.document = document;
   };
   
   //var Collection = function(db, name, factory, options)
@@ -30,11 +32,50 @@ describe('Collection', function() {
     expect(collection.items[0]).toEqual(jasmine.any(DummyFactory));
   });
   
-  /*
-  TODO:
-    Test add, delete, save etc...
-    
-  */
+  it('adds items to db correctly', function() {
+    var collection = new Collection(db, 'project', DummyFactory);
+    collection.add({name: 'test1'});
+    $rootScope.$apply();
+    expect(collection.items.length).toEqual(1);
+    var item = collection.items[0];
+    expect(item.document.name).toEqual('test1');
+    var documentInDb;
+    db.get(item.document._id).then(function(result) {
+      documentInDb = result;
+    });
+    $rootScope.$apply();
+    expect(documentInDb).toEqual(item.document);
+  });
+  
+  it('saves changes to db correctly', function() {
+    var collection = new Collection(db, 'project', DummyFactory);
+    collection.add({name: 'test1'});
+    $rootScope.$apply();
+    var item = collection.items[0];
+    item.document.name = "boo";
+    collection.save(item);
+    var documentInDb;
+    db.get(item.document._id).then(function(result) {
+      documentInDb = result;
+    });
+    $rootScope.$apply();
+    expect(documentInDb.name).toEqual("boo");
+  });
+  
+  it('delete removes document from db correctly', function() {
+    var collection = new Collection(db, 'project', DummyFactory);
+    collection.add({name: 'test1'});
+    $rootScope.$apply();
+    var item = collection.items[0];
+    collection.remove(item);
+    $rootScope.$apply();
+    var documentInDb;
+    db.get(item.document._id).then(function(result) {
+      documentInDb = result;
+    });
+    $rootScope.$apply();
+    expect(documentInDb).toBeUndefined(); 
+  });
   
 });
 

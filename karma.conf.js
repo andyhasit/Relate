@@ -19,6 +19,7 @@ module.exports = function(config) {
       'src/module.js',
       'src/**/*.js',
       //And your specs
+      'tests/pouch-fake.js',
       'tests/**/*.test.js'
     ],
     
