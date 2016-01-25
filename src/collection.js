@@ -9,13 +9,14 @@ angular.module('Relate').factory('Collection', function($q) {
     this.items = [];
     
     //Can be changed in options. Implement later.
+    this.itemName = name;
     this.collectionName = name + 's';
     this.typeIdentifier = name;
   };
   
-  Collection.prototype._register = function(doc) {
+  Collection.prototype._registerDocument = function(document) {
     //Registers a document in items -- internal use.
-    this.items.push(new this._factory(doc));
+    this.items.push(new this._factory(document));
   };
   
   Collection.prototype._fetch = function(result) {
@@ -31,8 +32,8 @@ angular.module('Relate').factory('Collection', function($q) {
     obj.type = this.typeIdentifier;
     this._db.post(obj).then(function (result) {
       self._fetch(result);
-    }).then(function (doc) {
-      self._register(doc);
+    }).then(function (document) {
+      self._register(document);
     });
   };
   

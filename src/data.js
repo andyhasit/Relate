@@ -29,8 +29,8 @@ angular.module('Relate').service('data', function($q, Collection) {
   self.addParentChildRelationship = function(parentCollection, childCollection, options) {
     var collection = new ParentChildRelationship(self._db, parentCollection, childCollection, options);
     registerCollection(collection);
-    registerTypeIdentifier(collection.childParentTypeIdentifier, collection);
-    registerTypeIdentifier(collection.parentChildrenTypeIdentifier, collection);
+    registerTypeIdentifier(collection.childrenOfParentTypeIdentifier, collection);
+    registerTypeIdentifier(collection.parentOfChildTypeIdentifier, collection);
     return collection;
   };
   
@@ -50,14 +50,7 @@ angular.module('Relate').service('data', function($q, Collection) {
      
     constructor:
       self = this;
-      parentChildFunctionName = 'get' + singleCapitalised(parentCollection.name) + pluralCapitalised(childCollection.name);
-      //e.g. getProjectTasks
-      self[parentChildFunctionName] = function(parentObject) {
-        var childIds = [];
-        self.items.findAll(
-         
-      };
-  
+      
   
   */
   function RelateBadSetupError(message) {
@@ -104,13 +97,19 @@ angular.module('Relate').service('data', function($q, Collection) {
     return defer.promise;
   };
   
-  function registerDoc(doc) {
-    //Registers a doc loaded from the db to the correct collection
-    if (doc.type) {
-      var collection = self._typeIdentifiers[doc.type];
-      collection._register(doc);
+  function registerDocument(document) {
+    //Registers a document loaded from the db to the correct collection
+    var typeIdentifier = document.type;
+    if (typeIdentifier) {
+      var collection = self._typeIdentifiers[typeIdentifier];
+      if (collection) {
+        collection._registerDocument(document, typeIdentifier);
+      } else {
+        console.log('Could not load document \"' document._id '\" as type was not recognised (' + typeIdentifier + ')');
+      }
     } else {
-      self._db.remove(doc);
+      //self._db.remove(document);
+      console.log('Could not load document \"' document._id '\" as it has no \"type\" field.');
     }
   }
   
@@ -123,7 +122,7 @@ angular.module('Relate').service('data', function($q, Collection) {
     }).then(function (result) {
       angular.forEach(result.rows, function(row){
         //delete all:  self._db.remove(row.doc);
-        registerDoc(row.doc);
+        registerDocument(row.doc);
       });
       defer.resolve();
     }).catch(function (err) {
