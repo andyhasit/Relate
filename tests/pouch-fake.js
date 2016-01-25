@@ -52,3 +52,9 @@ angular.module('PouchFake', []).service('db', function($q) {
   }
   
 });
+
+var DummyFactory = function (document) {
+  this.document = document;
+  this._id = document._id;
+};
+  

@@ -12,18 +12,7 @@ describe('Collection', function() {
     $rootScope = _$rootScope_;
     db = _db_;
   }));
-  
-  var DummyFactory = function (document) {
-    this.document = document;
-    this._id = document._id;
-  };
-  
-   var DummyFactory2 = function (document) {
-    this.document = document;
-  };
-  
-  //var Collection = function(db, name, factory, options)
-  
+
   it('registers items as the correct objects', function() {
     var collection = new Collection(db, 'project', DummyFactory);
     collection._registerDocument({_id: 123, name: 'test1'});
@@ -62,7 +51,7 @@ describe('Collection', function() {
     expect(documentInDb.name).toEqual("boo");
   });
   
-  it('delete removes document from db correctly', function() {
+  it('removes document from db correctly', function() {
     var collection = new Collection(db, 'project', DummyFactory);
     collection.add({name: 'test1'});
     $rootScope.$apply();

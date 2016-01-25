@@ -6,7 +6,7 @@ angular.module('Relate').service('data', function($q, Collection) {
     data.init(db);
     data.addCollection('project');
     data.addCollection('task');
-    data.addParentChildRelationship(data.projects, data.tasks);
+    data.addParentOfChildCollection(data.projects, data.tasks);
   */
   var self = this;
   self._typeIdentifiers = {}; //These are for determining what collection to load docs into.
@@ -26,8 +26,8 @@ angular.module('Relate').service('data', function($q, Collection) {
     return collection;
   };
   
-  self.addParentChildRelationship = function(parentCollection, childCollection, options) {
-    var collection = new ParentChildRelationship(self._db, parentCollection, childCollection, options);
+  self.addParentOfChildCollection = function(parentCollection, childCollection, options) {
+    var collection = new ParentOfChildCollection(self._db, parentCollection, childCollection, options);
     registerCollection(collection);
     registerTypeIdentifier(collection.parentOfChildCollection);
     registerTypeIdentifier(collection.childrenOfParentCollection);

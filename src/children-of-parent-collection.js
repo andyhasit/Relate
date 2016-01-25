@@ -7,12 +7,21 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
     this.parentCollection = parentCollection;
     this.childCollection = childCollection;
     this._index = {};
-    this.typeIdentifier = ''; //this is set in ParentChildRelationship
+    this.typeIdentifier = ''; //this is set in ParentOfChildCollection
     this.parentOfChildCollection = parentOfChildCollection;
   };
   
   ChildrenOfParentCollection.prototype._registerDocument = function(document, typeIdentifier) {
     this._index[document.parentId] = {document: document};
+  };
+  
+  ChildrenOfParentCollection.prototype._fetch = function(result) {
+    //Fetches a document -- internal use.
+    if (!result.ok) {
+      console.log(result);
+      throw "Error fetching data";
+    }
+    return this._db.get(result.id);
   };
   
   ChildrenOfParentCollection.prototype.unlink = function(parentItem, childItem) {

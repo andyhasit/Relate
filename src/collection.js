@@ -48,7 +48,6 @@ angular.module('Relate').factory('Collection', function($q) {
   };
   
   Collection.prototype.save = function(item) {
-    var self = this;
     this._db.put(item.document).then(function (result) {
       item.document._rev = result.rev;
     });

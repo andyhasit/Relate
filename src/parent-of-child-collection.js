@@ -1,37 +1,55 @@
 
 angular.module('Relate').factory('ParentOfChildCollection', function($q) {
   /*
-  This is for internal use by ParentChildRelationship.
+  This is for internal use by ParentOfChildCollection.
   */
   var ParentOfChildCollection = function(db, parentCollection, childCollection, options) {
     this._db = db;
     this.parentCollection = parentCollection;
     this.childCollection = childCollection;
     this._index = {};
-    this.typeIdentifier = ''; //this is set in ParentChildRelationship
+    this.typeIdentifier = ''; //this is set in ParentOfChildCollection
   };
   
   ParentOfChildCollection.prototype._registerDocument = function(document, typeIdentifier) {
     this._index[document.childId] = {document: document}; //TODO: check for duplicates here?
   };
   
+  ParentOfChildCollection.prototype._fetch = function(result) {
+    //Fetches a document -- internal use.
+    if (!result.ok) {
+      console.log(result);
+      throw "Error fetching data";
+    }
+    return this._db.get(result.id);
+  };
+  
+  
   ParentOfChildCollection.prototype.link = function(parentItem, childItem) {
     // Creates a link.
+    var self = this;
+    if (parentItem) {
+      parentItemId = parentItem._id;
+    } else {
+      parentItemId = null;
+    }
     var indexEntry = this._index[childItem._id];
     if (indexEntry) {
-      //update & put indexEntry.document
-      //save actual object.
+      indexEntry.document.parentId = parentItemId;
+      this._db.put(indexEntry.document).then(function (result) {
+        indexEntry.document._rev = result.rev;
+        indexEntry.liveObject = parentItem;
+      });
     } else {
-      //link this on the back of a post() promise
       var document = {
-        parentId: parentItem._id, 
+        parentId: parentItemId, 
         childId: childItem._id
       };
-      //this._db.post(document).get/fetch etc...
-      this._index[childItem._id] = {
-        document: {parentId:parentItem._id, childId:childItem._id},
-        liveObject: parentItem
-      };
+      this._db.post(document).then(function (result) {
+        self._fetch(result).then(function (document) {
+          self._registerDocument(document);
+        });
+      });
     }
   };
   
@@ -48,14 +66,12 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q) {
     var self = this;
     var indexEntry = this._index[childItem._id];
     if (indexEntry) {
-      var liveObject = indexEntry.liveObject;
       //TODO: decide how I want to model parentless objects.
-      if (angular.isUndefined(liveObject)) {
+      if (angular.isUndefined(indexEntry.liveObject)) {
         //TODO: can this fail?
-        liveObject = self.parentCollection.getById(indexEntry.document.parentId);
-        indexEntry['liveObject'] = liveObject;
-        return liveObject;
-      }
+        indexEntry.liveObject = self.parentCollection.getItem(indexEntry.document.parentId);
+      } 
+      return indexEntry.liveObject;
     } else {
       return null;
     }

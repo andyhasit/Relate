@@ -29,10 +29,14 @@ When a project is deleted, it informs the task-project relationship, which:
 maybe have a flag to indicate if in a cascade delete operation, in which case, child items don't bother deleting themselves from childrenOfParent collection
 as that entry will be deleted anyway (and it would create lots of db operations.
 
-
-Next steps:
+Done:
     tests for Collection with db mock.
+    use strict
+Next steps:
+    move repeat code in tests up to beforeEach()
+    test ChildrenOfParentCollection functions
     test ParentOfChildCollection functions
+    test ParentOfChildCollection
     
 later:
 
