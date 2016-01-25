@@ -5,16 +5,16 @@ describe('Collection', function() {
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
   
-  var db, Collection, $rootScope;
+  var db, collection, Collection, $rootScope;
   
   beforeEach(inject(function(_Collection_, _$rootScope_, _db_, $q) {
     Collection = _Collection_;
     $rootScope = _$rootScope_;
     db = _db_;
+    collection = new Collection(db, 'project', DummyFactory);
   }));
 
   it('registers items as the correct objects', function() {
-    var collection = new Collection(db, 'project', DummyFactory);
     collection._registerDocument({_id: 123, name: 'test1'});
     collection._registerDocument({_id: 456, name: 'test2'});
     expect(collection.items.length).toEqual(2);
@@ -22,7 +22,6 @@ describe('Collection', function() {
   });
   
   it('adds items to db correctly', function() {
-    var collection = new Collection(db, 'project', DummyFactory);
     collection.add({name: 'test1'});
     $rootScope.$apply();
     expect(collection.items.length).toEqual(1);
@@ -34,10 +33,10 @@ describe('Collection', function() {
     });
     $rootScope.$apply();
     expect(documentInDb).toEqual(item.document);
+    expect(documentInDb.type).toEqual(collection.typeIdentifier);
   });
   
   it('saves changes to db correctly', function() {
-    var collection = new Collection(db, 'project', DummyFactory);
     collection.add({name: 'test1'});
     $rootScope.$apply();
     var item = collection.items[0];
@@ -52,7 +51,6 @@ describe('Collection', function() {
   });
   
   it('removes document from db correctly', function() {
-    var collection = new Collection(db, 'project', DummyFactory);
     collection.add({name: 'test1'});
     $rootScope.$apply();
     var item = collection.items[0];
@@ -64,6 +62,22 @@ describe('Collection', function() {
     });
     $rootScope.$apply();
     expect(documentInDb).toBeUndefined(); 
+  });
+  
+  it('removes document trigges calls to relationships', function() {
+    collection.add({name: 'test1'});
+    /*collection._registerRelationship()
+    $rootScope.$apply();
+    var item = collection.items[0];
+    collection.remove(item);
+    $rootScope.$apply();
+    var documentInDb;
+    db.get(item.document._id).then(function(result) {
+      documentInDb = result;
+    });
+    $rootScope.$apply();
+    expect(documentInDb).toBeUndefined();
+    */
   });
   
 });

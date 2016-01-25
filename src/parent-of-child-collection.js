@@ -8,7 +8,8 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q) {
     this.parentCollection = parentCollection;
     this.childCollection = childCollection;
     this._index = {};
-    this.typeIdentifier = ''; //this is set in ParentOfChildCollection
+    // e.g. lnk_child_tasks_of_project
+    this.typeIdentifier = 'lnk_parent_' + parentCollection.itemName + '_of_' + childCollection.itemName;
   };
   
   ParentOfChildCollection.prototype._registerDocument = function(document, typeIdentifier) {
@@ -26,17 +27,16 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q) {
   
   
   ParentOfChildCollection.prototype.link = function(parentItem, childItem) {
-    // Creates a link.
     var self = this;
     if (parentItem) {
       parentItemId = parentItem._id;
     } else {
       parentItemId = null;
     }
-    var indexEntry = this._index[childItem._id];
+    var indexEntry = self._index[childItem._id];
     if (indexEntry) {
       indexEntry.document.parentId = parentItemId;
-      this._db.put(indexEntry.document).then(function (result) {
+      self._db.put(indexEntry.document).then(function (result) {
         indexEntry.document._rev = result.rev;
         indexEntry.liveObject = parentItem;
       });
@@ -44,9 +44,9 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q) {
       var document = {
         parentId: parentItemId, 
         childId: childItem._id,
-        type: this.typeIdentifier
+        type: self.typeIdentifier
       };
-      this._db.post(document).then(function (result) {
+      self._db.post(document).then(function (result) {
         self._fetch(result).then(function (document) {
           self._registerDocument(document);
         });
@@ -56,21 +56,27 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q) {
   
   ParentOfChildCollection.prototype.removeChild = function(childItem) {
     //
-    var indexEntry = this._index[childItem._id];
+    var self = this;
+    var id = childItem._id;
+    var indexEntry = this._index[id];
     if (indexEntry) {
-      //chain a delete, then remove key.
+      this._db.remove(indexEntry.document).then(function (result) {
+        delete self._index[id];
+      });
     }
   };
   
   ParentOfChildCollection.prototype.getParent = function(childItem) {
-    //Returns actual object.
+    //Returns actual object, or null.
     var self = this;
     var indexEntry = this._index[childItem._id];
     if (indexEntry) {
-      //TODO: decide how I want to model parentless objects.
       if (angular.isUndefined(indexEntry.liveObject)) {
-        //TODO: can this fail?
-        indexEntry.liveObject = self.parentCollection.getItem(indexEntry.document.parentId);
+        var parent = self.parentCollection.getItem(indexEntry.document.parentId);
+        if (angular.isUndefined(parent)) {
+          parent = null;
+        }
+        indexEntry.liveObject = parent;
       } 
       return indexEntry.liveObject;
     } else {

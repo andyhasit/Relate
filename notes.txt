@@ -34,12 +34,13 @@ Done:
     use strict
 Next steps:
     test ParentOfChildCollection functions
+        test correct type is being saved
+        move naming into collections
+    test collection remove calls relationship
     move repeat code in tests up to beforeEach()
     test ChildrenOfParentCollection functions
     test ParentOfChildCollection
     move _fetch
-    test correct type is bieng saved
-    move namin into collections
     
 later:
 

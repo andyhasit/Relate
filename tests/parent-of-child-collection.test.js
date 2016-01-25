@@ -89,11 +89,26 @@ describe('ParentOfChildCollection', function() {
     expect(collection.getParent(task5)).toEqual(project5);
   });
   
+  it('link creates documents of correct type', function() {
+    spyOn(db, 'post').and.callThrough();
+    taskCollection._registerDocument({_id: '778923', title: 'New task'});
+    var task5 = taskCollection.getItem('778923');
+    $rootScope.$apply();
+    collection.link(project1, task5);
+    $rootScope.$apply();
+    expect(db.post).toHaveBeenCalledWith({
+      childId: task5._id,
+      parentId: project1._id,
+      type: collection.typeIdentifier
+    });
+  });
   
-  /*
-
-  removeChild
-  */
+  it('removeChild removes the key', function() {
+    collection.removeChild(task1);
+    expect(collection.getParent(task1)).toEqual(project1);
+    $rootScope.$apply();
+    expect(collection.getParent(task1)).toEqual(null);
+  });
   
 });
 

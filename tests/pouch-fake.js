@@ -7,42 +7,54 @@ angular.module('PouchFake', []).service('db', function($q) {
   var self = this;
   self.documents = {};
   
+  function copyObject(data) {
+    var document = {};
+    for (var prop in data) {
+      if (data.hasOwnProperty(prop)) {
+          document[prop] = data[prop];
+      }
+    }
+    return document;
+  }
   self.post = function(data) {
+    var document = copyObject(data);
     var id = data._id || Date.now();
-    data._id = id;
-    data._rev = "1-" + id;
-    self.documents[id] = data;
+    document._id = id;
+    document._rev = "1-" + id;
+    self.documents[id] = document;
     return $q.when({
           "ok": true,
-          "id": data._id,
-          "rev": data._rev
+          "id": document._id,
+          "rev": document._rev
         }
     );
   };
   
   self.put = function(data) {
-    var id = data._id;
+    var document = copyObject(data);
+    var id = document._id;
     var newRev = "2-" + id;
-    data._rev = newRev;
-    self.documents[id] = data;
+    document._rev = newRev;
+    self.documents[id] = document;
     return $q.when({
           "ok": true,
-          "id": data._id,
-          "rev": data._rev
+          "id": document._id,
+          "rev": document._rev
         }
     );
   };
   
   self.remove = function(data) {
-    var id = data._id;
+    var document = copyObject(data);
+    var id = document._id;
     var newRev = "2-" + id;
-    data._rev = newRev;
-    data._deleted = true;
+    document._rev = newRev;
+    document._deleted = true;
     delete self.documents[id];
     return $q.when({
           "ok": true,
-          "id": data._id,
-          "rev": data._rev
+          "id": document._id,
+          "rev": document._rev
         }
     );
   };

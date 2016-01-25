@@ -7,7 +7,8 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
     this.parentCollection = parentCollection;
     this.childCollection = childCollection;
     this._index = {};
-    this.typeIdentifier = ''; //this is set in ParentOfChildCollection
+    // e.g. lnk_child_tasks_of_project 
+    this.typeIdentifier = 'lnk_child_' + childCollection.itemName + 's_of_' + parentCollection.itemName;
     this.parentOfChildCollection = parentOfChildCollection;
   };
   
