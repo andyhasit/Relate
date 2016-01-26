@@ -31,19 +31,23 @@ as that entry will be deleted anyway (and it would create lots of db operations.
 
 Done:
     tests for Collection with db mock.
-    use strict
-Next steps:
+    use strict    
     test ParentOfChildCollection functions
         test correct type is being saved
         move naming into collections
-    test collection remove calls relationship
     move repeat code in tests up to beforeEach()
+Next steps:
     test ChildrenOfParentCollection functions
+    
     test ParentOfChildCollection
+    
+    test collection remove calls relationship
     move _fetch
     
 later:
-
+    many to many relationship
+    what about enforcing parameters for new objects?
+    
     get delete registering
     Can certain collections be lazy loaded? Like notes? In that case may we need a one-to-one relationship? And if this is the case we'd load by query, not allDocs.
 

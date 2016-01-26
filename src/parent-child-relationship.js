@@ -5,12 +5,14 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
   */
 
   var ParentChildRelationship = function(db, parentCollection, childCollection, options) {
+    var options = options || {};
     this._db = db;
     this.parentCollection = parentCollection;
     this.childCollection = childCollection;
     this.parentOfChildCollection = new ParentOfChildCollection(db, parentCollection, childCollection, options);
     this.childrenOfParentCollection = new ChildrenOfParentCollection(db, parentCollection, childCollection, parentOfChildCollection, options);
-    this._setNames(options);
+    this.collectionName = options.collectionName || 
+        'lnk_' + parentCollection.itemName + '_' + childCollection.itemName + 's';
     parentCollection._registerRelationship(this);
     childCollection._registerRelationship(this);
     this._cascadeDeleteInProgress = false;
@@ -28,6 +30,16 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
     //Sets the parent of the child, unlinking child from previous parent if applicable.
     this.parentOfChildCollection.link(parentItem, childItem);
     this.childrenOfParentCollection.link(parentItem, childItem, oldParent);
+    /*
+    TODO: think about this in terms of timing, can it fuck up?
+    Currently the childrenOfParentCollection uses the parentOfChildCollection to determine
+    if the child has an old parent.
+    
+    SO question:
+      I have collections with parent child relationships. I use an object to manage each of the relationships (e.g. TaskInProjectRelationshipManager).
+      A RelationshipManager coordinates two regitsers: parentOfChild and childrenOfParent
+    
+    */
   };
   
   ParentChildRelationship.prototype.remove = function (item) {
@@ -64,20 +76,6 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
     }
   }
   */
-  ParentChildRelationship.prototype._setNames = function (options) {
-    //These can be changed in options. Implement later.
-    
-    // e.g. project
-    var parentName = this.parentCollection.itemName;
-    // e.g. task
-    var childName = this.childCollection.itemName;
-    // e.g. lnk_project_tasks
-    this.collectionName = 'lnk_' + parentName + '_' + childName + 's';
-    // e.g. lnk_child_tasks_of_project 
-    this.childrenOfParentCollection.typeIdentifier = 'lnk_child_' + childName + 's_of_' + parentName;
-    // e.g. lnk_parent_project_of_task
-    this.parentOfChildCollection.typeIdentifier = 'lnk_parent_' + parentName + '_of_' + childName; 
-  };
 
   return ParentChildRelationship;
 });

@@ -4,15 +4,17 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q) {
   This is for internal use by ParentOfChildCollection.
   */
   var ParentOfChildCollection = function(db, parentCollection, childCollection, options) {
+    var options = options || {};
     this._db = db;
     this.parentCollection = parentCollection;
     this.childCollection = childCollection;
     this._index = {};
     // e.g. lnk_child_tasks_of_project
-    this.typeIdentifier = 'lnk_parent_' + parentCollection.itemName + '_of_' + childCollection.itemName;
+    this.typeIdentifier = options.parentOfChildTypeIdentifier ||
+        'lnk_parent_' + parentCollection.itemName + '_of_' + childCollection.itemName;
   };
   
-  ParentOfChildCollection.prototype._registerDocument = function(document, typeIdentifier) {
+  ParentOfChildCollection.prototype._registerDocument = function(document) {
     this._index[document.childId] = {document: document}; //TODO: check for duplicates here?
   };
   

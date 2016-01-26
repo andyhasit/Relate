@@ -1,18 +1,30 @@
 
-
+angular.module('Relate').factory('Test', function($window) {
+    
+    
+   return function () {
+     this.ok = false;
+     if ($window.confirm('OK?')) {
+       this.ok = true;
+     }
+   }   
+});
+    
 angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
   
-  var ChildrenOfParentCollection = function(db, parentCollection, childCollection, parentOfChildCollection, options) {
+  var ChildrenOfParentCollection = function(db, parentCollection, childCollection, parentOfChildCollection, $window, options) {
+    var options = options || {};
     this._db = db;
     this.parentCollection = parentCollection;
     this.childCollection = childCollection;
     this._index = {};
     // e.g. lnk_child_tasks_of_project 
-    this.typeIdentifier = 'lnk_child_' + childCollection.itemName + 's_of_' + parentCollection.itemName;
+    this.typeIdentifier = options.childrenOfParentTypeIdentifier || 
+        'lnk_child_' + childCollection.itemName + 's_of_' + parentCollection.itemName;
     this.parentOfChildCollection = parentOfChildCollection;
   };
   
-  ChildrenOfParentCollection.prototype._registerDocument = function(document, typeIdentifier) {
+  ChildrenOfParentCollection.prototype._registerDocument = function(document) {
     this._index[document.parentId] = {document: document};
   };
   
@@ -25,10 +37,23 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
     return this._db.get(result.id);
   };
   
+  function removeFromArray(array, item) {
+    //will be unique in list.
+    var index = array.indexOf(item);
+    if (index > -1) {
+      array.splice(index, 1);
+    }
+  }
+  
   ChildrenOfParentCollection.prototype.unlink = function(parentItem, childItem) {
+    var self = this;
     var indexEntry = this._index[parentItem._id];
     if (indexEntry) {
+      removeFromArray(indexEntry.document.childIds, childItem._id);
       //TOOD: remove id from list, put, chain etc...
+      self._db.put(indexEntry.document).then(function() {
+        removeFromArray(indexEntry.liveChildren, childItem);
+      });
     }
   };
   
@@ -36,27 +61,39 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
     // this creates a link.
     //TODO: deal with parent being null, which is allowed
     var self = this;
-    var oldParent = self.parentOfChildCollection.getParent(childItem); //Can be undefined or null and this is OK.
+    var oldParent = self.parentOfChildCollection.getParent(childItem); //TODO: think of a better way to ensure both collections synch? Can timing issues cause problems?
     if (oldParent) {
       this.unlink(oldParent, childItem);
     }
-    var indexEntry = this._index[parentItem._id];
-    if (indexEntry) {
-      // TODO: save and chain
-      //Also: rearrange because we're fetching childItem from childCollection but we don't need to.
-      indexEntry.document.childIds.push(childItem.Id);
-      var liveChildren = indexEntry.liveChildren;
-      if (angular.isUndefined(liveChildren)) {
-        liveChildren = [];
-        angular.forEach(indexEntry.document.childIds, function (childId) {
-          liveChildren.push(self.childCollection.getItem(childId));
-        });
-        indexEntry.liveChildren = liveChildren;
-      }
+    /*
+    What if parent is null?
+    if (parentItem) {
+      parentItemId = parentItem._id;
     } else {
-      //create with post and link.
-      //type: this.typeIdentifier
-      //this._index[parentItem._id] = {document
+      parentItemId = null;
+    }
+    */
+    if (parentItem) {
+      var indexEntry = this._index[parentItem._id];
+      if (indexEntry) {
+        self._ensureIndexEntryHasLiveChildren(indexEntry);
+        indexEntry.document.childIds.push(childItem.Id);
+        self._db.put(indexEntry.document).then(function() {
+          indexEntry.liveChildren.push(childItem)
+        });
+      } else {
+        //TODO: resolve code duplication with other collection
+        var document = {
+          parentId: parentItem._id, 
+          childIds: [childItem._id],
+          type: self.typeIdentifier
+        };
+        self._db.post(document).then(function (result) {
+          self._fetch(result).then(function (document) {
+            self._registerDocument(document);
+          });
+        });
+      }
     }
   };
   
@@ -68,8 +105,56 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
     //
   };
   
-  ChildrenOfParentCollection.prototype.getChildren = function(parentItem) {
-    //
+  ChildrenOfParentCollection.prototype._ensureIndexEntryHasLiveChildren = function(indexEntry) {
+    var self = this;
+    var liveChildren = indexEntry.liveChildren;
+    if (angular.isUndefined(liveChildren)) {
+      liveChildren = [];
+      angular.forEach(indexEntry.document.childIds, function (childId) {
+        liveChildren.push(self.childCollection.getItem(childId));
+      });
+      indexEntry.liveChildren = liveChildren;
+    }
   };
   
+  ChildrenOfParentCollection.prototype.getChildren = function(parentItem) {
+    var self = this;
+    var indexEntry = this._index[parentItem._id];
+    if (indexEntry) {
+      self._ensureIndexEntryHasLiveChildren(indexEntry);
+      return indexEntry.liveChildren;
+    } else {
+      return [];
+    }
+  };
+    
+  /*
+    
+    var liveChildren = indexEntry.liveChildren;
+      if (angular.isUndefined(liveChildren)) {
+        liveChildren = [];
+        angular.forEach(indexEntry.document.childIds, function (childId) {
+          liveChildren.push(self.childCollection.getItem(childId));
+        });
+        indexEntry.liveChildren = liveChildren;
+      }
+      
+    if (indexEntry) {
+      ensureIndexEntryHasLiveChildren();
+      
+      if (angular.isUndefined(indexEntry.liveChildren)) {
+        var parent = self.parentCollection.getItem(indexEntry.document.parentId);
+        if (angular.isUndefined(parent)) {
+          parent = null;
+        }
+        indexEntry.liveObject = parent;
+      } 
+      return indexEntry.liveObject;
+    } else {
+      return null;
+    }
+  };
+  */
+  
+  return ChildrenOfParentCollection;
 });

@@ -105,7 +105,7 @@ angular.module('Relate').service('data', function($q, Collection) {
     if (typeIdentifier) {
       var collection = self._typeIdentifiers[typeIdentifier];
       if (collection) {
-        collection._registerDocument(document, typeIdentifier);
+        collection._registerDocument(document, typeIdentifier); //TODO: is typeIdentifier needed?
       } else {
         console.log('Could not load document \"' + document._id + '\" as type was not recognised (' + typeIdentifier + ')');
       }

@@ -22,10 +22,10 @@ describe('ParentOfChildCollection', function() {
     taskCollection._registerDocument({_id: '004', title: 'Go swimming'});
     taskCollection._registerDocument({_id: '005', title: 'no parents'});
     
-    collection = new ParentOfChildCollection(db, projectCollection, taskCollection);
-    collection._registerDocument({_id: '123', childId: '002', parentId: '001'});
-    collection._registerDocument({_id: '456', childId: '003', parentId: '001'});
-    collection._registerDocument({_id: '789', childId: '004', parentId: '011'});
+    parentOfChildCollection = new ParentOfChildCollection(db, projectCollection, taskCollection);
+    parentOfChildCollection._registerDocument({_id: '123', childId: '002', parentId: '001'});
+    parentOfChildCollection._registerDocument({_id: '456', childId: '003', parentId: '001'});
+    parentOfChildCollection._registerDocument({_id: '789', childId: '004', parentId: '011'});
     
     task1 = taskCollection.getItem('002');
     task2 = taskCollection.getItem('003');
@@ -37,45 +37,45 @@ describe('ParentOfChildCollection', function() {
   }));
   
   it('getParent returns the correct object', function() {
-    expect(collection.getParent(task1)).toEqual(project1);
-    expect(collection.getParent(task2)).toEqual(project1);
-    expect(collection.getParent(task3)).toEqual(project2);
+    expect(parentOfChildCollection.getParent(task1)).toEqual(project1);
+    expect(parentOfChildCollection.getParent(task2)).toEqual(project1);
+    expect(parentOfChildCollection.getParent(task3)).toEqual(project2);
     
-    collection.link(project2, task1);    
-    expect(collection.getParent(task1)).toEqual(project1);
+    parentOfChildCollection.link(project2, task1);    
+    expect(parentOfChildCollection.getParent(task1)).toEqual(project1);
     $rootScope.$apply();
-    expect(collection.getParent(task1)).toEqual(project2);
+    expect(parentOfChildCollection.getParent(task1)).toEqual(project2);
   });
   
   it('link changes parent on $digest', function() {
-    expect(collection.getParent(task1)).toEqual(project1);
-    collection.link(project2, task1);    
-    expect(collection.getParent(task1)).toEqual(project1);
+    expect(parentOfChildCollection.getParent(task1)).toEqual(project1);
+    parentOfChildCollection.link(project2, task1);    
+    expect(parentOfChildCollection.getParent(task1)).toEqual(project1);
     $rootScope.$apply();
-    expect(collection.getParent(task1)).toEqual(project2);
+    expect(parentOfChildCollection.getParent(task1)).toEqual(project2);
   });
   
   it('link works with tasks with no parents', function() {
-    expect(collection.getParent(task4)).toEqual(null);
-    expect(collection.getParent(task1)).toEqual(project1);
-    collection.link(null, task1);
-    collection.link(project1, task4);
+    expect(parentOfChildCollection.getParent(task4)).toEqual(null);
+    expect(parentOfChildCollection.getParent(task1)).toEqual(project1);
+    parentOfChildCollection.link(null, task1);
+    parentOfChildCollection.link(project1, task4);
     
-    expect(collection.getParent(task4)).toEqual(null);
-    expect(collection.getParent(task1)).toEqual(project1);
+    expect(parentOfChildCollection.getParent(task4)).toEqual(null);
+    expect(parentOfChildCollection.getParent(task1)).toEqual(project1);
     $rootScope.$apply();
     
-    expect(collection.getParent(task1)).toEqual(null);
-    expect(collection.getParent(task4)).toEqual(project1);
+    expect(parentOfChildCollection.getParent(task1)).toEqual(null);
+    expect(parentOfChildCollection.getParent(task4)).toEqual(project1);
   });
   
   it('link works with unregistered child', function() {
     taskCollection._registerDocument({_id: '778923', title: 'New task'});
     var task5 = taskCollection.getItem('778923');
-    expect(collection.getParent(task5)).toEqual(null);
-    collection.link(project1, task5);
+    expect(parentOfChildCollection.getParent(task5)).toEqual(null);
+    parentOfChildCollection.link(project1, task5);
     $rootScope.$apply();
-    expect(collection.getParent(task5)).toEqual(project1);
+    expect(parentOfChildCollection.getParent(task5)).toEqual(project1);
   });
   
   it('link works with unregistered parent', function() {
@@ -83,10 +83,10 @@ describe('ParentOfChildCollection', function() {
     var project5 = projectCollection.getItem('sdfd8923');
     taskCollection._registerDocument({_id: '778923', title: 'New task'});
     var task5 = taskCollection.getItem('778923');
-    expect(collection.getParent(task5)).toEqual(null);
-    collection.link(project5, task5);
+    expect(parentOfChildCollection.getParent(task5)).toEqual(null);
+    parentOfChildCollection.link(project5, task5);
     $rootScope.$apply();
-    expect(collection.getParent(task5)).toEqual(project5);
+    expect(parentOfChildCollection.getParent(task5)).toEqual(project5);
   });
   
   it('link creates documents of correct type', function() {
@@ -94,20 +94,20 @@ describe('ParentOfChildCollection', function() {
     taskCollection._registerDocument({_id: '778923', title: 'New task'});
     var task5 = taskCollection.getItem('778923');
     $rootScope.$apply();
-    collection.link(project1, task5);
+    parentOfChildCollection.link(project1, task5);
     $rootScope.$apply();
     expect(db.post).toHaveBeenCalledWith({
       childId: task5._id,
       parentId: project1._id,
-      type: collection.typeIdentifier
+      type: parentOfChildCollection.typeIdentifier
     });
   });
   
   it('removeChild removes the key', function() {
-    collection.removeChild(task1);
-    expect(collection.getParent(task1)).toEqual(project1);
+    parentOfChildCollection.removeChild(task1);
+    expect(parentOfChildCollection.getParent(task1)).toEqual(project1);
     $rootScope.$apply();
-    expect(collection.getParent(task1)).toEqual(null);
+    expect(parentOfChildCollection.getParent(task1)).toEqual(null);
   });
   
 });
