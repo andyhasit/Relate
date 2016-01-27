@@ -103,7 +103,7 @@ describe('ParentOfChildCollection', function() {
     });
   });
   
-  it('removeChild removes the key', function() {
+  it('removeChild works', function() {
     parentOfChildCollection.removeChild(task1);
     expect(parentOfChildCollection.getParent(task1)).toEqual(project1);
     $rootScope.$apply();
@@ -111,4 +111,3 @@ describe('ParentOfChildCollection', function() {
   });
   
 });
-

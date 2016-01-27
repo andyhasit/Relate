@@ -107,11 +107,11 @@ angular.module('Relate').service('data', function($q, Collection) {
       if (collection) {
         collection._registerDocument(document, typeIdentifier); //TODO: is typeIdentifier needed?
       } else {
-        console.log('Could not load document \"' + document._id + '\" as type was not recognised (' + typeIdentifier + ')');
+        throw('Could not load document \"' + document._id + '\" as type was not recognised (' + typeIdentifier + ')');
       }
     } else {
       //self._db.remove(document);
-      console.log('Could not load document \"' + document._id + '\" as it has no \"type\" field.');
+      throw('Could not load document \"' + document._id + '\" as it has no \"type\" field.');
     }
   }
   

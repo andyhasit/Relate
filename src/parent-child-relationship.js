@@ -10,7 +10,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
     this.parentCollection = parentCollection;
     this.childCollection = childCollection;
     this.parentOfChildCollection = new ParentOfChildCollection(db, parentCollection, childCollection, options);
-    this.childrenOfParentCollection = new ChildrenOfParentCollection(db, parentCollection, childCollection, parentOfChildCollection, options);
+    this.childrenOfParentCollection = new ChildrenOfParentCollection(db, parentCollection, childCollection, options);
     this.collectionName = options.collectionName || 
         'lnk_' + parentCollection.itemName + '_' + childCollection.itemName + 's';
     parentCollection._registerRelationship(this);
@@ -30,16 +30,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
     //Sets the parent of the child, unlinking child from previous parent if applicable.
     this.parentOfChildCollection.link(parentItem, childItem);
     this.childrenOfParentCollection.link(parentItem, childItem, oldParent);
-    /*
-    TODO: think about this in terms of timing, can it fuck up?
-    Currently the childrenOfParentCollection uses the parentOfChildCollection to determine
-    if the child has an old parent.
-    
-    SO question:
-      I have collections with parent child relationships. I use an object to manage each of the relationships (e.g. TaskInProjectRelationshipManager).
-      A RelationshipManager coordinates two regitsers: parentOfChild and childrenOfParent
-    
-    */
+    // TODO: chain promises?
   };
   
   ParentChildRelationship.prototype.remove = function (item) {

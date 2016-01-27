@@ -53,5 +53,26 @@ later:
 
 
 
+    SO question:
+      I have collections with parent child relationships. I use an object to manage each of the relationships (e.g. TaskInProjectRelationshipManager).
+      A RelationshipManager coordinates two collection managers: parentOfChild and childrenOfParent.
+      Those essentially keep track of what is in the database.
+      
+      They fire db operations which rely on promises.
+      
+      So their states are not updated synchronously.
+      
+      I have an angular app which uses CouchDB/PouchDb. Some documents represent entities, some represent a relationship.
+      I also have providers whose state reflects what is in the db.
+      
+      Do I chain all promises.
+      
+      E.g. I delete a project, it deletes all tasks, and all documents representing the links between tasks and projects.
+      
+      I need these to be carried out in the sequence I expect them.
+      
+      I could use http://www.codeducky.org/q-serial/
+      But in my case, I just want them to resolve in the sequence I asked for.
+  
         
         
