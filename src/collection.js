@@ -56,7 +56,7 @@ angular.module('Relate').factory('Collection', function($q) {
   Collection.prototype.remove = function(item) {
     var self = this;
     angular.forEach(self.relationships, function(relationship) {
-      relationship.removeItem(item);
+      relationship._removeItem(item);
     });
     this._db.remove(item).then(function (result) {
       delete self._index[item._id];

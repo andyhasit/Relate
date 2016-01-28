@@ -145,34 +145,6 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
       return [];
     }
   };
-    
-  /*
-    
-    var liveChildren = indexEntry.liveChildren;
-      if (angular.isUndefined(liveChildren)) {
-        liveChildren = [];
-        angular.forEach(indexEntry.document.childIds, function (childId) {
-          liveChildren.push(self.childCollection.getItem(childId));
-        });
-        indexEntry.liveChildren = liveChildren;
-      }
-      
-    if (indexEntry) {
-      ensureIndexEntryHasLiveChildren();
-      
-      if (angular.isUndefined(indexEntry.liveChildren)) {
-        var parent = self.parentCollection.getItem(indexEntry.document.parentId);
-        if (angular.isUndefined(parent)) {
-          parent = null;
-        }
-        indexEntry.liveObject = parent;
-      } 
-      return indexEntry.liveObject;
-    } else {
-      return null;
-    }
-  };
-  */
   
   return ChildrenOfParentCollection;
 });

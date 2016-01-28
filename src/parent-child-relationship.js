@@ -1,5 +1,5 @@
 
-angular.module('Relate').factory('ParentChildRelationship', function($q, ParentOfChildCollection, ChildrenOfParentCollection) {
+angular.module('Relate').factory('ParentChildRelationship', function($q, ParentOfChildCollection, ChildrenOfParentCollection, ValueRegister) {
   /*
   
   */
@@ -15,7 +15,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
         'lnk_' + parentCollection.itemName + '_' + childCollection.itemName + 's';
     parentCollection._registerRelationship(this);
     childCollection._registerRelationship(this);
-    this._cascadeDeleteInProgress = false;
+    this._parentDeleteInProgress = new ValueRegister();
   };
   
   ParentChildRelationship.prototype.getParent = function (childItem) {
@@ -33,25 +33,36 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
     // TODO: chain promises?
   };
   
-  ParentChildRelationship.prototype.remove = function (item) {
-    /* Gets called when an item is deleted */
+  ParentChildRelationship.prototype._removeItem = function (item) {
+    /* Gets called when an item is deleted 
+    item can be the parent or the child in the relationship.
+    If delete is called on the parent:
+      call collection.delete on all children (which will call relationship.delete) 
+      remove from childrenOfParentCollection
+    If called on the child:
+      remove from parentOfChildCollection
+      remove from childrenOfParentCollection (but skip this step if it was called as part of parent delete)
+    
+    */
     var self = this;
-    if (self.isParentType(item)) {
-      self._cascadeDeleteInProgress = true;
+    if (self._isParentType(item)) {
+      self._parentDeleteInProgress.set(item, true);
       angular.forEach(self.getChildren(item), function (childItem) {
         self.childCollection.remove(childItem);
       });
+      self._parentDeleteInProgress.set(item, false);
       self.childrenOfParentCollection.removeParent(item);
-      self._cascadeDeleteInProgress = false;
     } else {
+      var parentItem = self.getParent(item);
       self.parentOfChildCollection.removeChild(item);
-      if (!self._cascadeDeleteInProgress) {
+      if (parentItem && !self._parentDeleteInProgress.get(parentItem)) {
         self.childrenOfParentCollection.removeChild(item);
       }
-    } 
+    }
   };
   
-  ParentChildRelationship.prototype.isParentType = function (item) {
+  
+  ParentChildRelationship.prototype._isParentType = function (item) {
     if (item.type === this.parentCollection.typeIdentifier) {
       return true;
     } else if (item.type === this.parentCollection.typeIdentifier) {
