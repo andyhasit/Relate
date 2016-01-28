@@ -27,7 +27,6 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q) {
     return this._db.get(result.id);
   };
   
-  
   ParentOfChildCollection.prototype.link = function(parentItem, childItem) {
     var self = this;
     if (parentItem) {

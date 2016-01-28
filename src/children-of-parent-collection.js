@@ -75,10 +75,14 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
     } else {
       parentItemId = null;
     }
+    
     if (parentItem) {
+      c.log('search index for ' + parentItem._id);
       //addChildToParent... //TODO: refactor out, and also make into promise chained off of unlink?
       var indexEntry = this._index[parentItem._id];
       if (indexEntry) {
+        
+        c.log('found index for ' + parentItem._id);
         self._ensureIndexEntryHasLiveChildren(indexEntry);
         indexEntry.document.childIds.push(childItem.Id);
         self._db.put(indexEntry.document).then(function() {
@@ -142,6 +146,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
       self._ensureIndexEntryHasLiveChildren(indexEntry);
       return indexEntry.liveChildren;
     } else {
+      c.log('no index');
       return [];
     }
   };

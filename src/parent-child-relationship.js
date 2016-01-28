@@ -29,7 +29,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
   ParentChildRelationship.prototype.link = function (parentItem, childItem) {
     //Sets the parent of the child, unlinking child from previous parent if applicable.
     this.parentOfChildCollection.link(parentItem, childItem);
-    this.childrenOfParentCollection.link(parentItem, childItem, oldParent);
+    this.childrenOfParentCollection.link(parentItem, childItem);
     // TODO: chain promises?
   };
   

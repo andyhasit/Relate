@@ -5,6 +5,12 @@
 */
 angular.module('PouchFake', []).service('db', function($q) {
   var self = this;
+  self.nextId = 1;
+  
+  function newId(){
+    self.nextId ++;
+    return self.nextId;
+  }
   self.documents = {};
   
   function copyObject(data) {
@@ -18,7 +24,7 @@ angular.module('PouchFake', []).service('db', function($q) {
   }
   self.post = function(data) {
     var document = copyObject(data);
-    var id = data._id || Date.now();
+    var id = data._id || newId();
     document._id = id;
     document._rev = "1-" + id;
     self.documents[id] = document;
