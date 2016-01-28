@@ -1,13 +1,14 @@
 
 
-describe('TestDataService', function() {
+xdescribe('TestDataService', function() {
   
   beforeEach(module('Relate'));
   
-  var data;
+  var data, db;
   
-  beforeEach(inject(function(_data_) {
+  beforeEach(inject(function(_data_, _db_, QueuedResponseDb) {
     data = _data_;
+    db = new QueuedResponseDb(_db_);
   }));
   
   var DummyFactory = function (doc) {

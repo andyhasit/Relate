@@ -77,7 +77,6 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
     }
     
     if (parentItem) {
-      c.log('search index for ' + parentItem._id);
       //addChildToParent... //TODO: refactor out, and also make into promise chained off of unlink?
       var indexEntry = this._index[parentItem._id];
       if (indexEntry) {
@@ -146,7 +145,6 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
       self._ensureIndexEntryHasLiveChildren(indexEntry);
       return indexEntry.liveChildren;
     } else {
-      c.log('no index');
       return [];
     }
   };

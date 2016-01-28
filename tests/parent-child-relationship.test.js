@@ -8,12 +8,12 @@ describe('ParentChildRelationship', function() {
   var db, Collection, ParentChildRelationship, ValueRegister, $rootScope;
   var task1, task2, task3, task4, project1, project2;
   
-  beforeEach(inject(function(_Collection_, _ParentChildRelationship_, _$rootScope_, _ValueRegister_, _db_, $q) {
+  beforeEach(inject(function(_Collection_, QueuedResponseDb, _ParentChildRelationship_, _$rootScope_, _ValueRegister_, _db_, $q) {
     Collection = _Collection_;
     ValueRegister = _ValueRegister_;
     ParentChildRelationship = _ParentChildRelationship_;
     $rootScope = _$rootScope_;
-    db = _db_;
+    db = new QueuedResponseDb(_db_);
     
     projectCollection = new Collection(db, 'project', DummyFactory);
     taskCollection = new Collection(db, 'task', DummyFactory);
@@ -35,8 +35,12 @@ describe('ParentChildRelationship', function() {
     relationship = new ParentChildRelationship(db, projectCollection, taskCollection);    
   }));
   
-  fit('link works as expected', function() {
+  it('link works as expected', function() {
+    /*
+    Problem:
+    link calls db promise. if that is not resolved in time
     
+    */
     relationship.link(project1, task1);
     $rootScope.$apply();
     relationship.link(project2, task2);

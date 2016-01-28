@@ -7,10 +7,10 @@ describe('Collection', function() {
   
   var db, collection, Collection, $rootScope;
   
-  beforeEach(inject(function(_Collection_, _$rootScope_, _db_, $q) {
+  beforeEach(inject(function(_Collection_, QueuedResponseDb, _$rootScope_, _db_, $q) {
     Collection = _Collection_;
     $rootScope = _$rootScope_;
-    db = _db_;
+    db = new QueuedResponseDb(_db_);_db_;
     collection = new Collection(db, 'project', DummyFactory);
   }));
 

@@ -8,11 +8,11 @@ describe('ParentOfChildCollection', function() {
   var db, Collection, $rootScope, projectCollection, taskCollection, collection, task1,
     task2, task3, task4, project1, project2;
   
-  beforeEach(inject(function(_Collection_, _ParentOfChildCollection_, _$rootScope_, _db_, $q) {
+  beforeEach(inject(function(_Collection_, QueuedResponseDb, _ParentOfChildCollection_, _$rootScope_, _db_, $q) {
     Collection = _Collection_;
     ParentOfChildCollection = _ParentOfChildCollection_;
     $rootScope = _$rootScope_;
-    db = _db_;
+    db = new QueuedResponseDb(_db_);
     projectCollection = new Collection(db, 'project', DummyFactory);
     taskCollection = new Collection(db, 'task', DummyFactory);
     projectCollection._registerDocument({_id: '001', name: 'project 1'});
