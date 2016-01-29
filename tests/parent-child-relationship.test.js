@@ -17,12 +17,12 @@ describe('ParentChildRelationship', function() {
     
     projectCollection = new Collection(db, 'project', DummyFactory);
     taskCollection = new Collection(db, 'task', DummyFactory);
-    projectCollection._registerDocument({_id: 'p001', name: 'project 1'});
-    projectCollection._registerDocument({_id: 'p002', name: 'project 2'});
-    taskCollection._registerDocument({_id: 't001', title: 'Do dishes'});
-    taskCollection._registerDocument({_id: 't002', title: 'Go running'});
-    taskCollection._registerDocument({_id: 't003', title: 'Go swimming'});
-    taskCollection._registerDocument({_id: 't004', title: 'no parents'});
+    projectCollection._registerDocument({_id: 'p001', name: 'project 1', type: 'project'});
+    projectCollection._registerDocument({_id: 'p002', name: 'project 2', type: 'project'});
+    taskCollection._registerDocument({_id: 't001', title: 'Do dishes', type: 'task'});
+    taskCollection._registerDocument({_id: 't002', title: 'Go running', type: 'task'});
+    taskCollection._registerDocument({_id: 't003', title: 'Go swimming', type: 'task'});
+    taskCollection._registerDocument({_id: 't004', title: 'no parents', type: 'task'});
     
     task1 = taskCollection.getItem('t001');
     task2 = taskCollection.getItem('t002');
@@ -47,10 +47,12 @@ describe('ParentChildRelationship', function() {
   });
   
   it('removeItem with parent calls remove on child collection', function() {
-    
-    relationship.link(project1, task1);
     spyOn(taskCollection, 'remove').and.callThrough();
-    
+    relationship.link(project1, task1);
+    relationship.link(null, task1);
+    projectCollection.remove(project1);
+    $rootScope.$apply();
+    expect(taskCollection.remove).toHaveBeenCalledWith(0);
   });
   
   /*

@@ -1,5 +1,5 @@
 
-angular.module('Relate').factory('Collection', function($q) {
+angular.module('Relate').factory('Collection', function($q, BaseCollection) {
   /*
   All data is stored in collections. Add, delete and save are done via the collection.
   */
@@ -15,6 +15,7 @@ angular.module('Relate').factory('Collection', function($q) {
     this.typeIdentifier = name;
     this.relationships = [];
   };
+  Collection.prototype = new BaseCollection();
   
   Collection.prototype._registerRelationship = function(relationship) {
     //Registers a relationship -- internal use.
@@ -26,25 +27,11 @@ angular.module('Relate').factory('Collection', function($q) {
     var item = new this._factory(document);
     this.items.push(item);
     this._index[document._id] = item;
-  };
-  
-  Collection.prototype._fetch = function(result) {
-    //Fetches a document -- internal use.
-    if (!result.ok) {
-      console.log(result);
-      throw "Error fetching data";
-    }
-    return this._db.get(result.id);
+    return item;
   };
   
   Collection.prototype.add = function(data) {
-    var self = this;
-    data.type = this.typeIdentifier;
-    this._db.post(data).then(function (result) {
-      self._fetch(result).then(function (document) {
-        self._registerDocument(document);
-      });
-    });
+    return this.__createDocument(data);
   };
   
   Collection.prototype.save = function(item) {
@@ -55,6 +42,23 @@ angular.module('Relate').factory('Collection', function($q) {
   
   Collection.prototype.remove = function(item) {
     var self = this;
+    var deferred = $q.defer();
+    var childDeletions = [];
+    /* Note that calls to relationship._removeItem must not depend on a promise themselves 
+    */
+    angular.forEach(self.relationships, function(relationship) {
+      childDeletions.push(relationship._removeItem(item));
+    });
+    $q.all(childDeletions).then(function() {
+      self._db.remove(item).then(function (result) {
+        delete self._index[item._id];
+        self.items.splice(self.items.indexOf(item), 1);//TODO: test this.
+        deferred.resolve();
+      });
+    });
+    return deferred.promise;
+    /*
+    Old sync way:
     angular.forEach(self.relationships, function(relationship) {
       relationship._removeItem(item);
     });
@@ -62,6 +66,7 @@ angular.module('Relate').factory('Collection', function($q) {
       delete self._index[item._id];
       self.items.splice(self.items.indexOf(item), 1);//TODO: test this.
     });
+    */
   };
   
   Collection.prototype.getItem = function(id) {

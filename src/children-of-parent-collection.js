@@ -59,8 +59,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
         // Create a "pending" entry in the index, so we know not to create the document in db twice.
         var doc = {
             parentId: parentItem._id, 
-            childIds: [childItem._id],
-            type: self.typeIdentifier
+            childIds: [childItem._id]
           };
         self.__createPending(parentItem._id, doc);
       }
@@ -70,6 +69,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
   ChildrenOfParentCollection.prototype.removeParent = function(parentItem) {
     //In response to a parent object being deleted.
     var self = this;
+    var deferred = $q.defer();
     self.__getIndexEntry(parentItem._id).then( function(indexEntry) {
       if (indexEntry) {
         if (indexEntry.document.childIds.length > 0) {
@@ -77,16 +77,20 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
         } else {
           self._db.remove(indexEntry.document).then(function() {
             delete self._index[parentItem._id];
+            deferred.resolve();
           });
         }
       }
     });
+    return deferred.promise;
   };
   
   ChildrenOfParentCollection.prototype.removeChild = function(childItem) {
     var oldParentId = this._reverseIndex[childItem._id];
     if (oldParentId) {
-      this.__removeChildFromParent(oldParentId, childItem);
+      return this.__removeChildFromParent(oldParentId, childItem);
+    } else {
+      return $q.when(null);
     }
   };
   
@@ -120,13 +124,17 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
   ChildrenOfParentCollection.prototype.__removeChildFromParent = function(parentId, childItem) {
     //TODO: bug if try to unlink while still creation still pending?
     var self = this;
+    var deferred = $q.defer();
     self.__getIndexEntry(parentId).then( function(indexEntry) {
       removeFromArray(indexEntry.document.childIds, childItem._id);
       self._db.put(indexEntry.document).then(function() {
+        self.__ensureIndexEntryHasLiveChildren(indexEntry);
         removeFromArray(indexEntry.liveChildren, childItem);
+        delete self._reverseIndex[childItem._id];
+        deferred.resolve();
       });
-      delete self._reverseIndex[childItem._id];
     });
+    return deferred.promise;
   };
   
   ChildrenOfParentCollection.prototype.__ensureIndexEntryHasLiveChildren = function(indexEntry) {

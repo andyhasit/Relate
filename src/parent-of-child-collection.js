@@ -22,15 +22,6 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, BaseCol
     return newIndexEntry;
   };
   
-  ParentOfChildCollection.prototype._fetch = function(result) {
-    //Fetches a document -- internal use.
-    if (!result.ok) {
-      console.log(result);
-      throw "Error fetching data";
-    }
-    return this._db.get(result.id);
-  };
-  
   ParentOfChildCollection.prototype.link = function(parentItem, childItem) {
     var self = this;
     if (parentItem) {
@@ -40,31 +31,44 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, BaseCol
     }
     var indexEntry = self._index[childItem._id];
     if (indexEntry) {
-      indexEntry.document.parentId = parentItemId;
-      self._db.put(indexEntry.document).then(function (result) {
-        indexEntry.document._rev = result.rev;
-        indexEntry.liveObject = parentItem;
-      });
+      if (indexEntry.pending) { // Db creation is pending
+        indexEntry.pendingPromise.then( function(newEntry) {
+          self.__setChildParent(newEntry, parentItem);
+        });
+      } else { // Db creation is not pending
+        self.__setChildParent(indexEntry, parentItem);
+      }
     } else {
       var document = {
         parentId: parentItemId, 
-        childId: childItem._id,
-        type: self.typeIdentifier
+        childId: childItem._id
       };
       self.__createPending(childItem._id, document);
     }
   };
   
+  ParentOfChildCollection.prototype.__setChildParent = function(indexEntry, parentItem) {
+    var self = this;
+    indexEntry.document.parentId = parentItemId;
+    self._db.put(indexEntry.document).then(function (result) {
+      indexEntry.document._rev = result.rev;
+      indexEntry.liveObject = parentItem;
+    });
+  };
+  
   ParentOfChildCollection.prototype.removeChild = function(childItem) {
     //
     var self = this;
+    var deferred = $q.defer();
     var id = childItem._id;
     var indexEntry = this._index[id];
     if (indexEntry) {
       this._db.remove(indexEntry.document).then(function (result) {
         delete self._index[id];
+        deferred.resolve();
       });
     }
+    return deferred.promise;
   };
   
   ParentOfChildCollection.prototype.getParent = function(childItem) {

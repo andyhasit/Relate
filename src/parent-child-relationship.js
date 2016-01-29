@@ -45,29 +45,41 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
     
     */
     var self = this;
+    var deferred = $q.defer();
     if (self._isParentType(item)) {
       self._parentDeleteInProgress.set(item, true);
+      var childDeletions = [];
       angular.forEach(self.getChildren(item), function (childItem) {
-        self.childCollection.remove(childItem);
+        childDeletions.push(self.childCollection.remove(childItem));
       });
+      //Note that _parentDeleteInProgress will be set to false before promises are all resolved (non critical)
       self._parentDeleteInProgress.set(item, false);
-      self.childrenOfParentCollection.removeParent(item);
+      $q.all(childDeletions).then(function() {
+        self.childrenOfParentCollection.removeParent(item);
+        deferred.resolve();
+      });
     } else {
       var parentItem = self.getParent(item);
-      self.parentOfChildCollection.removeChild(item);
+      var childDeletions = [];
+      childDeletions.push(self.parentOfChildCollection.removeChild(item));
       if (parentItem && !self._parentDeleteInProgress.get(parentItem)) {
-        self.childrenOfParentCollection.removeChild(item);
+        childDeletions.push(self.childrenOfParentCollection.removeChild(item));
       }
+      $q.all(childDeletions).then(function() {
+        deferred.resolve();
+      });
     }
+    return deferred.promise;
   };
   
-  
   ParentChildRelationship.prototype._isParentType = function (item) {
-    if (item.type === this.parentCollection.typeIdentifier) {
+    var itemType = item.document.type;
+    if (itemType === this.parentCollection.typeIdentifier) {
       return true;
-    } else if (item.type === this.parentCollection.typeIdentifier) {
+    } else if (itemType === this.parentCollection.typeIdentifier) {
       return false;
     } else {
+      c.log(item);
       throw {message: "wtf?"}; //TODO - change.
     }
   };

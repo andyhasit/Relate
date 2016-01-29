@@ -44,6 +44,7 @@ angular.module('Relate').factory('BaseCollection', function($q) {
     //Post then fetch a new document.
     var defer = $q.defer();
     var self = this;
+    document.type = self.typeIdentifier;
     self._db.post(document).then( function (result) {
       if (result.ok) {
         self._db.get(result.id).then( function (docFromDb) {        
