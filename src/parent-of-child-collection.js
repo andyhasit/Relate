@@ -16,7 +16,10 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, BaseCol
   ParentOfChildCollection.prototype = new BaseCollection();
   
   ParentOfChildCollection.prototype._registerDocument = function(document) {
-    this._index[document.childId] = {document: document}; //TODO: check for duplicates here?
+    //TODO: check for duplicates here?
+    var newIndexEntry = {document: document};
+    this._index[document.childId] = newIndexEntry;
+    return newIndexEntry;
   };
   
   ParentOfChildCollection.prototype._fetch = function(result) {
@@ -48,11 +51,7 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, BaseCol
         childId: childItem._id,
         type: self.typeIdentifier
       };
-      self._db.post(document).then(function (result) {
-        self._fetch(result).then(function (document) {
-          self._registerDocument(document);
-        });
-      });
+      self.__createPending(childItem._id, document);
     }
   };
   
@@ -70,9 +69,10 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, BaseCol
   
   ParentOfChildCollection.prototype.getParent = function(childItem) {
     //Returns actual object, or null.
+    //TODO: is it OK for this to return null if not initialised?
     var self = this;
     var indexEntry = this._index[childItem._id];
-    if (indexEntry) {
+    if (indexEntry && !indexEntry.pending) {
       if (angular.isUndefined(indexEntry.liveObject)) {
         var parent = self.parentCollection.getItem(indexEntry.document.parentId);
         if (angular.isUndefined(parent)) {

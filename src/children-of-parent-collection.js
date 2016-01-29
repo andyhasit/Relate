@@ -19,7 +19,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
   ChildrenOfParentCollection.prototype.getChildren = function(parentItem) {
     var self = this;
     var indexEntry = this._index[parentItem._id];
-    if (indexEntry) {
+    if (indexEntry && !indexEntry.pending) {
       self.__ensureIndexEntryHasLiveChildren(indexEntry);
       return indexEntry.liveChildren;
     } else {
@@ -132,11 +132,13 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
   ChildrenOfParentCollection.prototype.__ensureIndexEntryHasLiveChildren = function(indexEntry) {
     var self = this;
     var liveChildren = indexEntry.liveChildren;
-    if (angular.isUndefined(liveChildren)) {
+    if (!liveChildren) {
       liveChildren = [];
-      angular.forEach(indexEntry.document.childIds, function (childId) {
-        liveChildren.push(self.childCollection.getItem(childId));
-      });
+      if (indexEntry.document) {
+        angular.forEach(indexEntry.document.childIds, function (childId) {
+          liveChildren.push(self.childCollection.getItem(childId));
+        });
+      }
       indexEntry.liveChildren = liveChildren;
     }
   };

@@ -41,7 +41,7 @@ describe('ParentOfChildCollection', function() {
     expect(parentOfChildCollection.getParent(task2)).toEqual(project1);
     expect(parentOfChildCollection.getParent(task3)).toEqual(project2);
     
-    parentOfChildCollection.link(project2, task1);    
+    parentOfChildCollection.link(project2, task1);
     expect(parentOfChildCollection.getParent(task1)).toEqual(project1);
     $rootScope.$apply();
     expect(parentOfChildCollection.getParent(task1)).toEqual(project2);
