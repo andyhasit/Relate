@@ -25,7 +25,6 @@ describe('ChildrenOfParentCollection', function() {
     
     collection = new ChildrenOfParentCollection(db, projectCollection, taskCollection);
     
-    
     task1 = taskCollection.getItem('t001');
     task2 = taskCollection.getItem('t002');
     task3 = taskCollection.getItem('t003');

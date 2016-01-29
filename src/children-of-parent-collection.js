@@ -16,31 +16,24 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
   };
   ChildrenOfParentCollection.prototype = new BaseCollection();
   
-  ChildrenOfParentCollection.prototype._registerDocument = function(document) {
+  ChildrenOfParentCollection.prototype.getChildren = function(parentItem) {
     var self = this;
-    var newEntry = {document: document};
-    self._index[document.parentId] = newEntry;
-    angular.forEach(document.childIds, function (childId) {
-      self._reverseIndex[childId] = document.parentId;
-    });
-    return newEntry;
-  };
-  
-  function removeFromArray(array, item) {
-    //will be unique in list.
-    var index = array.indexOf(item);
-    if (index > -1) {
-      array.splice(index, 1);
+    var indexEntry = this._index[parentItem._id];
+    if (indexEntry) {
+      self.__ensureIndexEntryHasLiveChildren(indexEntry);
+      return indexEntry.liveChildren;
+    } else {
+      return [];
     }
-  }
+  };
   
   ChildrenOfParentCollection.prototype.link = function(parentItem, childItem) {
     // this creates a link.
     //TODO: deal with parent being null, which is allowed
     var self = this;
-    var oldParent = self._reverseIndex[childItem._id];
-    if (oldParent) {
-      this.__removeChildFromParent(oldParent, childItem);
+    var oldParentId = self._reverseIndex[childItem._id];
+    if (oldParentId) {
+      this.__removeChildFromParent(oldParentId, childItem);
     }
     //TODO: do I need this?
     var parentItemId;
@@ -76,35 +69,6 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
     }
   };
   
-  ChildrenOfParentCollection.prototype.__createLinkDocument = function(document) {
-    //Returns a promise which resolves to the new indexEntry.
-    var defer = $q.defer();
-    var self = this;
-    self.__createDocument(document).then(function (docFromDb) {
-      defer.resolve(self._registerDocument(docFromDb));
-    });
-    return defer.promise;
-  };
-  
-  ChildrenOfParentCollection.prototype.__addChildToParent = function(indexEntry, childItem) {
-    //TODO: check unique first.
-    this._ensureIndexEntryHasLiveChildren(indexEntry);
-    indexEntry.document.childIds.push(childItem.Id);
-    this._db.put(indexEntry.document).then(function() {
-      indexEntry.liveChildren.push(childItem)
-    });
-  };
-  
-  ChildrenOfParentCollection.prototype.__removeChildFromParent = function(parentId, childItem) {
-    var self = this;
-    var indexEntry = this._index[parentId];
-    removeFromArray(indexEntry.document.childIds, childItem._id);
-    self._db.put(indexEntry.document).then(function() {
-      removeFromArray(indexEntry.liveChildren, childItem);
-    });
-    delete self._reverseIndex[childItem._id];
-  };
-  
   ChildrenOfParentCollection.prototype.removeParent = function(parentItem) {
     //In response to a parent object being deleted.
     var self = this;
@@ -121,13 +85,61 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
   };
   
   ChildrenOfParentCollection.prototype.removeChild = function(childItem) {
-    var oldParent = this._reverseIndex[childItem._id];
-    if (oldParent) {
-      this.__removeChildFromParent(oldParent, childItem);
+    var oldParentId = this._reverseIndex[childItem._id];
+    if (oldParentId) {
+      this.__removeChildFromParent(oldParentId, childItem);
     }
   };
   
-  ChildrenOfParentCollection.prototype._ensureIndexEntryHasLiveChildren = function(indexEntry) {
+  ChildrenOfParentCollection.prototype._registerDocument = function(document) {
+    var self = this;
+    var newEntry = {document: document};
+    self._index[document.parentId] = newEntry;
+    angular.forEach(document.childIds, function (childId) {
+      self._reverseIndex[childId] = document.parentId;
+    });
+    return newEntry;
+  };
+  
+  function removeFromArray(array, item) {
+    //will be unique in list.
+    var index = array.indexOf(item);
+    if (index > -1) {
+      array.splice(index, 1);
+    }
+  }
+  
+  ChildrenOfParentCollection.prototype.__createLinkDocument = function(document) {
+    //Returns a promise which resolves to the new indexEntry.
+    var defer = $q.defer();
+    var self = this;
+    self.__createDocument(document).then(function (docFromDb) {
+      defer.resolve(self._registerDocument(docFromDb));
+    });
+    return defer.promise;
+  };
+  
+  ChildrenOfParentCollection.prototype.__addChildToParent = function(indexEntry, childItem) {
+    //TODO: check unique first.
+    this.__ensureIndexEntryHasLiveChildren(indexEntry);
+    indexEntry.document.childIds.push(childItem.Id);
+    this._db.put(indexEntry.document).then(function() {
+      indexEntry.liveChildren.push(childItem)
+    });
+  };
+  
+  ChildrenOfParentCollection.prototype.__removeChildFromParent = function(parentId, childItem) {
+    //TODO: bug if try to unlink while still creation still pending?
+    var self = this;
+    var indexEntry = this._index[parentId];
+    removeFromArray(indexEntry.document.childIds, childItem._id);
+    self._db.put(indexEntry.document).then(function() {
+      removeFromArray(indexEntry.liveChildren, childItem);
+    });
+    delete self._reverseIndex[childItem._id];
+  };
+  
+  ChildrenOfParentCollection.prototype.__ensureIndexEntryHasLiveChildren = function(indexEntry) {
     var self = this;
     var liveChildren = indexEntry.liveChildren;
     if (angular.isUndefined(liveChildren)) {
@@ -136,17 +148,6 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
         liveChildren.push(self.childCollection.getItem(childId));
       });
       indexEntry.liveChildren = liveChildren;
-    }
-  };
-  
-  ChildrenOfParentCollection.prototype.getChildren = function(parentItem) {
-    var self = this;
-    var indexEntry = this._index[parentItem._id];
-    if (indexEntry) {
-      self._ensureIndexEntryHasLiveChildren(indexEntry);
-      return indexEntry.liveChildren;
-    } else {
-      return [];
     }
   };
   
