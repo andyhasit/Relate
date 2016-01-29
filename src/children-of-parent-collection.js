@@ -45,6 +45,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
     this._reverseIndex[childItem._id] = parentItemId;
     
     if (parentItem) {
+      //Cannote use __getIndexEntry here because action needs to be immediate.
       var indexEntry = this._index[parentItem._id];
       if (indexEntry) { // Parent is already in index
         if (indexEntry.pending) { // Db creation is pending
@@ -55,16 +56,13 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
           self.__addChildToParent(indexEntry, childItem);
         }
       } else { // Parent is not in index
-        var document = {
-          parentId: parentItem._id, 
-          childIds: [childItem._id],
-          type: self.typeIdentifier
-        };
         // Create a "pending" entry in the index, so we know not to create the document in db twice.
-        this._index[parentItem._id] = {
-          pending: true,
-          pendingPromise: self.__createLinkDocument(document)
-        };
+        var doc = {
+            parentId: parentItem._id, 
+            childIds: [childItem._id],
+            type: self.typeIdentifier
+          };
+        self.__createPending(parentItem._id, doc);
       }
     }
   };
@@ -72,16 +70,17 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
   ChildrenOfParentCollection.prototype.removeParent = function(parentItem) {
     //In response to a parent object being deleted.
     var self = this;
-    var indexEntry = this._index[parentItem._id];
-    if (indexEntry) {
-      if (indexEntry.document.childIds.length > 0) {
-        throw 'Cannot delete parent object as it still has children';
-      } else {
-        this._db.remove(indexEntry.document).then(function() {
-          delete self._index[parentItem._id];
-        });
+    self.__getIndexEntry(parentItem._id).then( function(indexEntry) {
+      if (indexEntry) {
+        if (indexEntry.document.childIds.length > 0) {
+          throw 'Cannot delete parent object as it still has children';
+        } else {
+          self._db.remove(indexEntry.document).then(function() {
+            delete self._index[parentItem._id];
+          });
+        }
       }
-    }
+    });
   };
   
   ChildrenOfParentCollection.prototype.removeChild = function(childItem) {
@@ -109,16 +108,6 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
     }
   }
   
-  ChildrenOfParentCollection.prototype.__createLinkDocument = function(document) {
-    //Returns a promise which resolves to the new indexEntry.
-    var defer = $q.defer();
-    var self = this;
-    self.__createDocument(document).then(function (docFromDb) {
-      defer.resolve(self._registerDocument(docFromDb));
-    });
-    return defer.promise;
-  };
-  
   ChildrenOfParentCollection.prototype.__addChildToParent = function(indexEntry, childItem) {
     //TODO: check unique first.
     this.__ensureIndexEntryHasLiveChildren(indexEntry);
@@ -131,12 +120,13 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
   ChildrenOfParentCollection.prototype.__removeChildFromParent = function(parentId, childItem) {
     //TODO: bug if try to unlink while still creation still pending?
     var self = this;
-    var indexEntry = this._index[parentId];
-    removeFromArray(indexEntry.document.childIds, childItem._id);
-    self._db.put(indexEntry.document).then(function() {
-      removeFromArray(indexEntry.liveChildren, childItem);
+    self.__getIndexEntry(parentId).then( function(indexEntry) {
+      removeFromArray(indexEntry.document.childIds, childItem._id);
+      self._db.put(indexEntry.document).then(function() {
+        removeFromArray(indexEntry.liveChildren, childItem);
+      });
+      delete self._reverseIndex[childItem._id];
     });
-    delete self._reverseIndex[childItem._id];
   };
   
   ChildrenOfParentCollection.prototype.__ensureIndexEntryHasLiveChildren = function(indexEntry) {

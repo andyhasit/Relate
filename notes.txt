@@ -74,5 +74,4 @@ later:
       I could use http://www.codeducky.org/q-serial/
       But in my case, I just want them to resolve in the sequence I asked for.
   
-        
-        
+  
