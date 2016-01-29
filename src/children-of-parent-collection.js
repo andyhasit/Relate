@@ -28,21 +28,12 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
   
   ChildrenOfParentCollection.prototype._registerDocument = function(document) {
     var self = this;
-    c.log('registering ' + document.parentId);
-    c.log(self._index[document.parentId]);
-    self._index[document.parentId] = {document: document};
+    var newEntry = {document: document};
+    self._index[document.parentId] = newEntry;
     angular.forEach(document.childIds, function (childId) {
       self._reverseIndex[childId] = document.parentId;
     });
-  };
-  
-  ChildrenOfParentCollection.prototype._fetch = function(result) {
-    //Fetches a document -- internal use.
-    if (!result.ok) {
-      console.log(result);
-      throw "Error fetching data";
-    }
-    return this._db.get(result.id);
+    return newEntry;
   };
   
   function removeFromArray(array, item) {
@@ -80,34 +71,74 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
     }
     this._reverseIndex[childItem._id] = parentItemId;
     
-    
     if (parentItem) {
-      //addChildToParent... //TODO: refactor out, and also make into promise chained off of unlink?
       var indexEntry = this._index[parentItem._id];
-      if (indexEntry) {
-        c.log('found index for ' + parentItem._id);
-        self._ensureIndexEntryHasLiveChildren(indexEntry);
-        indexEntry.document.childIds.push(childItem.Id);
-        self._db.put(indexEntry.document).then(function() {
-          indexEntry.liveChildren.push(childItem)
-        });
-      } else {
-        //TODO: resolve code duplication with other collection
-        
-        c.log('NO index found for ' + parentItem._id);
+      if (indexEntry) { // Parent is already in index
+        if (indexEntry.pending) { // Db creation is pending
+          indexEntry.pendingPromise.then( function(newEntry) {
+            self.__addChildToParent(newEntry, childItem);
+          });
+        } else { // Db creation is not pending
+          self.__addChildToParent(indexEntry, childItem);
+        }
+      } else { // Parent is not in index
         var document = {
           parentId: parentItem._id, 
           childIds: [childItem._id],
           type: self.typeIdentifier
         };
-        self._db.post(document).then(function (result) {
-          self._fetch(result).then(function (document) {
-            c.log('created ' + document.parentId);
-            self._registerDocument(document);
-          });
-        });
+        // Create a "pending" entry in the index, so we know not to create the document in db twice.
+        this._index[parentItem._id] = {
+          pending: true,
+          pendingPromise: self.__createLinkDocument(document)
+        };
       }
     }
+  };
+  
+  ChildrenOfParentCollection.prototype.__createDocument = function(document) {
+    //Post then fetch a new document.
+    var defer = $q.defer();
+    var self = this;
+    self._db.post(document).then( function (result) {
+      if (result.ok) {
+        self._db.get(result.id).then( function (document) {        
+          defer.resolve(document);
+        });
+      } else {
+        console.log(result);
+        throw "Error fetching data";
+      }
+    });
+    return defer.promise;
+  };
+  
+  ChildrenOfParentCollection.prototype._fetch = function(result) {
+    //Fetches a document -- internal use.
+    if (!result.ok) {
+      console.log(result);
+      throw "Error fetching data";
+    }
+    return this._db.get(result.id);
+  };
+  
+  ChildrenOfParentCollection.prototype.__createLinkDocument = function(document) {
+    //Returns a promise which resolves to the new indexEntry.
+    var defer = $q.defer();
+    var self = this;
+    self.__createDocument(document).then(function (docFromDb) {
+      defer.resolve(self._registerDocument(docFromDb));
+    });
+    return defer.promise;
+  };
+  
+  ChildrenOfParentCollection.prototype.__addChildToParent = function(indexEntry, childItem) {
+    //TODO: check unique first.
+    this._ensureIndexEntryHasLiveChildren(indexEntry);
+    indexEntry.document.childIds.push(childItem.Id);
+    this._db.put(indexEntry.document).then(function() {
+      indexEntry.liveChildren.push(childItem)
+    });
   };
   
   ChildrenOfParentCollection.prototype.removeParent = function(parentItem) {

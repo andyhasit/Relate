@@ -40,7 +40,7 @@ describe('ChildrenOfParentCollection', function() {
     collection._registerDocument({_id: '789', parentId: 'p002', childIds: ['t004']});
   }
   
-  fit('link works with completely new items', function() {
+  it('link works with completely new items', function() {
     expect(collection.getChildren(project1)).toEqual([]);
     expect(collection.getChildren(project2)).toEqual([]);
     collection.link(project2, task1);
