@@ -28,6 +28,8 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
   
   ChildrenOfParentCollection.prototype._registerDocument = function(document) {
     var self = this;
+    c.log('registering ' + document.parentId);
+    c.log(self._index[document.parentId]);
     self._index[document.parentId] = {document: document};
     angular.forEach(document.childIds, function (childId) {
       self._reverseIndex[childId] = document.parentId;
@@ -69,18 +71,20 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
     if (oldParent) {
       this._unlink(oldParent, childItem);
     }
+    //TODO: do I need this?
     var parentItemId;
     if (parentItem) {
       parentItemId = parentItem._id;
     } else {
       parentItemId = null;
     }
+    this._reverseIndex[childItem._id] = parentItemId;
+    
     
     if (parentItem) {
       //addChildToParent... //TODO: refactor out, and also make into promise chained off of unlink?
       var indexEntry = this._index[parentItem._id];
       if (indexEntry) {
-        
         c.log('found index for ' + parentItem._id);
         self._ensureIndexEntryHasLiveChildren(indexEntry);
         indexEntry.document.childIds.push(childItem.Id);
@@ -89,6 +93,8 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
         });
       } else {
         //TODO: resolve code duplication with other collection
+        
+        c.log('NO index found for ' + parentItem._id);
         var document = {
           parentId: parentItem._id, 
           childIds: [childItem._id],
@@ -96,12 +102,12 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
         };
         self._db.post(document).then(function (result) {
           self._fetch(result).then(function (document) {
+            c.log('created ' + document.parentId);
             self._registerDocument(document);
           });
         });
       }
     }
-    this._reverseIndex[childItem._id] = parentItemId;
   };
   
   ChildrenOfParentCollection.prototype.removeParent = function(parentItem) {

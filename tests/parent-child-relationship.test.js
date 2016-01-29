@@ -24,7 +24,6 @@ describe('ParentChildRelationship', function() {
     taskCollection._registerDocument({_id: 't003', title: 'Go swimming'});
     taskCollection._registerDocument({_id: 't004', title: 'no parents'});
     
-     
     task1 = taskCollection.getItem('t001');
     task2 = taskCollection.getItem('t002');
     task3 = taskCollection.getItem('t003');
@@ -36,17 +35,9 @@ describe('ParentChildRelationship', function() {
   }));
   
   it('link works as expected', function() {
-    /*
-    Problem:
-    link calls db promise. if that is not resolved in time
-    
-    */
     relationship.link(project1, task1);
-    $rootScope.$apply();
     relationship.link(project2, task2);
-    $rootScope.$apply();
     relationship.link(project1, task3);
-    $rootScope.$apply();
     relationship.link(project2, task4);
     $rootScope.$apply();
     expect(relationship.getChildren(project1)).toEqual([task1, task3]);

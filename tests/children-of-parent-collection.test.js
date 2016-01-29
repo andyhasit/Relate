@@ -16,37 +16,38 @@ describe('ChildrenOfParentCollection', function() {
     db = new QueuedResponseDb(_db_);
     projectCollection = new Collection(db, 'project', DummyFactory);
     taskCollection = new Collection(db, 'task', DummyFactory);
-    projectCollection._registerDocument({_id: '001', name: 'project 1'});
-    projectCollection._registerDocument({_id: '011', name: 'project 2'});
-    taskCollection._registerDocument({_id: '002', title: 'Do dishes'});
-    taskCollection._registerDocument({_id: '003', title: 'Go running'});
-    taskCollection._registerDocument({_id: '004', title: 'Go swimming'});
-    taskCollection._registerDocument({_id: '005', title: 'no parents'});
+    projectCollection._registerDocument({_id: 'p001', name: 'project 1'});
+    projectCollection._registerDocument({_id: 'p002', name: 'project 2'});
+    taskCollection._registerDocument({_id: 't001', title: 'Do dishes'});
+    taskCollection._registerDocument({_id: 't002', title: 'Go running'});
+    taskCollection._registerDocument({_id: 't003', title: 'Go swimming'});
+    taskCollection._registerDocument({_id: 't004', title: 'no parents'});
     
     collection = new ChildrenOfParentCollection(db, projectCollection, taskCollection);
     
     
-    task1 = taskCollection.getItem('002');
-    task2 = taskCollection.getItem('003');
-    task3 = taskCollection.getItem('004');
-    task4 = taskCollection.getItem('005');
+    task1 = taskCollection.getItem('t001');
+    task2 = taskCollection.getItem('t002');
+    task3 = taskCollection.getItem('t003');
+    task4 = taskCollection.getItem('t004');
     
-    project1 = projectCollection.getItem('001');
-    project2 = projectCollection.getItem('011');
+    project1 = projectCollection.getItem('p001');
+    project2 = projectCollection.getItem('p002');
   }));
   
   function createDefaultLinks() {
-    collection._registerDocument({_id: '456', parentId: '001', childIds: ['002', '003', '004']});
-    collection._registerDocument({_id: '789', parentId: '011', childIds: ['005']});
+    collection._registerDocument({_id: '456', parentId: 'p001', childIds: ['t001', 't002', 't003']});
+    collection._registerDocument({_id: '789', parentId: 'p002', childIds: ['t004']});
   }
   
-  it('link works with completely new items', function() {
+  fit('link works with completely new items', function() {
     expect(collection.getChildren(project1)).toEqual([]);
     expect(collection.getChildren(project2)).toEqual([]);
     collection.link(project2, task1);
+    collection.link(project2, task2);
     $rootScope.$apply();
     expect(collection.getChildren(project1)).toEqual([]);
-    expect(collection.getChildren(project2)).toEqual([task1]);
+    expect(collection.getChildren(project2)).toEqual([task1, task2]);
   });
   
   it('link works with items that have parents', function() {
@@ -107,7 +108,7 @@ describe('ChildrenOfParentCollection', function() {
     spyOn(db, 'remove').and.callThrough();
     collection.removeParent(project2);
     $rootScope.$apply();
-    expect(db.remove).toHaveBeenCalledWith({_id: '789', parentId: '011', childIds: [ ] });
+    expect(db.remove).toHaveBeenCalledWith({_id: '789', parentId: 'p002', childIds: [ ] });
   });
   
   it('removeChild fails if it still has children', function() {
