@@ -1,16 +1,5 @@
-
-angular.module('Relate').factory('Test', function($window) {
     
-    
-   return function () {
-     this.ok = false;
-     if ($window.confirm('OK?')) {
-       this.ok = true;
-     }
-   }   
-});
-    
-angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
+angular.module('Relate').factory('ChildrenOfParentCollection', function($q, BaseCollection) {
   
   var ChildrenOfParentCollection = function(db, parentCollection, childCollection, $window, options) {
     var options = options || {};
@@ -25,6 +14,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
     this.typeIdentifier = options.childrenOfParentTypeIdentifier || 
         'lnk_child_' + childCollection.itemName + 's_of_' + parentCollection.itemName;
   };
+  ChildrenOfParentCollection.prototype = new BaseCollection();
   
   ChildrenOfParentCollection.prototype._registerDocument = function(document) {
     var self = this;
@@ -44,23 +34,13 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
     }
   }
   
-  ChildrenOfParentCollection.prototype._unlink = function(parentId, childItem) {
-    var self = this;
-    var indexEntry = this._index[parentId];
-    removeFromArray(indexEntry.document.childIds, childItem._id);
-    self._db.put(indexEntry.document).then(function() {
-      removeFromArray(indexEntry.liveChildren, childItem);
-    });
-    delete self._reverseIndex[childItem._id];
-  };
-  
   ChildrenOfParentCollection.prototype.link = function(parentItem, childItem) {
     // this creates a link.
     //TODO: deal with parent being null, which is allowed
     var self = this;
     var oldParent = self._reverseIndex[childItem._id];
     if (oldParent) {
-      this._unlink(oldParent, childItem);
+      this.__removeChildFromParent(oldParent, childItem);
     }
     //TODO: do I need this?
     var parentItemId;
@@ -96,32 +76,6 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
     }
   };
   
-  ChildrenOfParentCollection.prototype.__createDocument = function(document) {
-    //Post then fetch a new document.
-    var defer = $q.defer();
-    var self = this;
-    self._db.post(document).then( function (result) {
-      if (result.ok) {
-        self._db.get(result.id).then( function (document) {        
-          defer.resolve(document);
-        });
-      } else {
-        console.log(result);
-        throw "Error fetching data";
-      }
-    });
-    return defer.promise;
-  };
-  
-  ChildrenOfParentCollection.prototype._fetch = function(result) {
-    //Fetches a document -- internal use.
-    if (!result.ok) {
-      console.log(result);
-      throw "Error fetching data";
-    }
-    return this._db.get(result.id);
-  };
-  
   ChildrenOfParentCollection.prototype.__createLinkDocument = function(document) {
     //Returns a promise which resolves to the new indexEntry.
     var defer = $q.defer();
@@ -139,6 +93,16 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
     this._db.put(indexEntry.document).then(function() {
       indexEntry.liveChildren.push(childItem)
     });
+  };
+  
+  ChildrenOfParentCollection.prototype.__removeChildFromParent = function(parentId, childItem) {
+    var self = this;
+    var indexEntry = this._index[parentId];
+    removeFromArray(indexEntry.document.childIds, childItem._id);
+    self._db.put(indexEntry.document).then(function() {
+      removeFromArray(indexEntry.liveChildren, childItem);
+    });
+    delete self._reverseIndex[childItem._id];
   };
   
   ChildrenOfParentCollection.prototype.removeParent = function(parentItem) {
@@ -159,7 +123,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q) {
   ChildrenOfParentCollection.prototype.removeChild = function(childItem) {
     var oldParent = this._reverseIndex[childItem._id];
     if (oldParent) {
-      this._unlink(oldParent, childItem);
+      this.__removeChildFromParent(oldParent, childItem);
     }
   };
   

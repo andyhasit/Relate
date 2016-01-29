@@ -1,5 +1,5 @@
 
-angular.module('Relate').factory('ParentOfChildCollection', function($q) {
+angular.module('Relate').factory('ParentOfChildCollection', function($q, BaseCollection) {
   /*
   This is for internal use by ParentOfChildCollection.
   */
@@ -13,6 +13,7 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q) {
     this.typeIdentifier = options.parentOfChildTypeIdentifier ||
         'lnk_parent_' + parentCollection.itemName + '_of_' + childCollection.itemName;
   };
+  ParentOfChildCollection.prototype = new BaseCollection();
   
   ParentOfChildCollection.prototype._registerDocument = function(document) {
     this._index[document.childId] = {document: document}; //TODO: check for duplicates here?
