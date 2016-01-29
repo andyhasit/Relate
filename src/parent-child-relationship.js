@@ -80,7 +80,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
       return false;
     } else {
       c.log(item);
-      throw {message: "wtf?"}; //TODO - change.
+      throw 'Unrecognised db object type: ' + itemType;
     }
   };
   /*

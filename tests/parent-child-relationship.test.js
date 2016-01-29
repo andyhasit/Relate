@@ -46,10 +46,10 @@ describe('ParentChildRelationship', function() {
     expect(relationship.getParent(task2)).toEqual(project2);
   });
   
-  it('removeItem with parent calls remove on child collection', function() {
+  fit('removeItem with parent calls remove on child collection', function() {
     spyOn(taskCollection, 'remove').and.callThrough();
     relationship.link(project1, task1);
-    relationship.link(null, task1);
+    //relationship.link(null, task1);
     projectCollection.remove(project1);
     $rootScope.$apply();
     expect(taskCollection.remove).toHaveBeenCalledWith(0);

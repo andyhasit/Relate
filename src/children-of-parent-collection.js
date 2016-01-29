@@ -33,6 +33,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
     var self = this;
     var oldParentId = self._reverseIndex[childItem._id];
     if (oldParentId) {
+      c.log(oldParentId);
       this.__removeChildFromParent(oldParentId, childItem);
     }
     //TODO: do I need this?
@@ -63,6 +64,8 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
           };
         self.__createPending(parentItem._id, doc);
       }
+    } else {
+      
     }
   };
   
@@ -73,6 +76,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
     self.__getIndexEntry(parentItem._id).then( function(indexEntry) {
       if (indexEntry) {
         if (indexEntry.document.childIds.length > 0) {
+          c.log(indexEntry);
           throw 'Cannot delete parent object as it still has children';
         } else {
           self._db.remove(indexEntry.document).then(function() {
@@ -127,10 +131,12 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
     var deferred = $q.defer();
     self.__getIndexEntry(parentId).then( function(indexEntry) {
       removeFromArray(indexEntry.document.childIds, childItem._id);
+      delete self._reverseIndex[childItem._id];
       self._db.put(indexEntry.document).then(function() {
         self.__ensureIndexEntryHasLiveChildren(indexEntry);
         removeFromArray(indexEntry.liveChildren, childItem);
-        delete self._reverseIndex[childItem._id];
+        
+        c.log(indexEntry.document.childIds);
         deferred.resolve();
       });
     });
