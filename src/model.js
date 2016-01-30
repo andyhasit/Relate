@@ -33,7 +33,6 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
     });
     angular.forEach(self.__relationships, function(relationship) {
         self[action + name + 's'] = self.__wrapFunction(collection, action + 'Items');
-      });
     });
     
   };
@@ -45,14 +44,14 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
       //var deferred = self.__queueCall(collection[baseFunctionName], collection, [collection, data, options]);
       return collection[baseFunctionName].call(collection, collection, data, options);
     }
-  });
+  };
   
   ModelPrivateFunctions.prototype.__queueCall = function (func, target, args) {
     var self = this;
     //reuse from other factory, but prevent it from being called yet.
       //chain this call
       var deferred = func.apply(target, args);
-    }
+    
   };
 
   ModelPrivateFunctions.prototype.__loadAndLinkEveryting = function () {
@@ -151,6 +150,7 @@ angular.module('Relate').factory('Model', function($q, ModelPrivateFunctions, Co
         console.log('model.' + prop);
       }
     }
-  });
+  };
   
 });
+  

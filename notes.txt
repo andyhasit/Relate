@@ -64,4 +64,15 @@ Does this mean I don't need the index and all that stuff?
 load collections
 load relationships
 
-Just stick with getChildren() which may return wrong items if
+
+New way 30/01:
+model queues requests made to it, meaning collection calls have guarantees.
+Next steps:
+    build tests for:
+        config
+        loading
+        calls to collections
+        
+    test model.
+    modify tests to go via model.
+    

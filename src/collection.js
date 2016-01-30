@@ -23,7 +23,7 @@ angular.module('Relate').factory('Collection', function($q, BaseCollection) {
     this.relationships.push(relationship);
   };
   
-  Collection.prototype._load(doc) {
+  Collection.prototype._load = function(doc) {
     var newItem = new this._factory(doc);
     newItem._doc = doc;
     newItem.id = doc._id;
@@ -32,14 +32,14 @@ angular.module('Relate').factory('Collection', function($q, BaseCollection) {
     return newItem;
   };
   
-  Collection.prototype.createLinks() {
+  Collection.prototype.createLinks = function() {
     var self = this;
     angular.forEach(self.__index, function(k, v){
       self.__createItemLinks(v)
     });
   };
   
-  Collection.prototype.__createItemLinks(newItem) {
+  Collection.prototype.__createItemLinks = function(newItem) {
     newItem._links = {};
     angular.forEach(this.relationships, function(relationship) {
       var name = relationship.propertyName;

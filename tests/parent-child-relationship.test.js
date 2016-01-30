@@ -1,6 +1,6 @@
 c = console; 
 
-describe('ParentChildRelationship', function() {
+xdescribe('ParentChildRelationship', function() {
   
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));

@@ -10,7 +10,7 @@ angular.module('Relate').factory('BaseCollection', function($q) {
   
   BaseCollection.prototype._registerDocument = function(docFromDb) {
     //Presumably adds the document to the index.
-    throw 'Must implement in derived class';
+    //throw 'Must implement in derived class';
   };
   
   BaseCollection.prototype.__createPending = function(key, document) {

@@ -19,7 +19,7 @@ Linking:
 
 */
 
-angular.module('Relate').factory('ParentRelationship', function($q) {
+angular.module('Relate').factory('ParentRelationshipNew', function($q) {
 
   var Relationship = function(propertyName, parentCollection, parentPopertyName) {
     this.propertyName = propertyName;
