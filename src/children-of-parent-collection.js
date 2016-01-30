@@ -1,24 +1,85 @@
-    
-angular.module('Relate').factory('ChildrenOfParentCollection', function($q, BaseCollection) {
+   
+angular.module('Relate').factory('ChildrenOfParentCollectionFunctions', function(util, $q, BaseCollection) {
   
-  var ChildrenOfParentCollection = function(db, parentCollection, childCollection, $window, options) {
+  var Class = function(db, parentCollection, childCollection, $window, options)    {var self = this;
     var options = options || {};
-    this._db = db;
-    this.parentCollection = parentCollection;
-    this.childCollection = childCollection;
+    self._db = db;
+    self.parentCollection = parentCollection;
+    self.childCollection = childCollection;
     //format {parentId: {document: Object, liveChildren: []}
-    this._index = {};
+    self._index = {};
     //format {childId: parentId}
-    this._reverseIndex = {};
+    self._reverseIndex = {};
     // e.g. lnk_child_tasks_of_project 
-    this.typeIdentifier = options.childrenOfParentTypeIdentifier || 
+    self.typeIdentifier = options.childrenOfParentTypeIdentifier || 
         'lnk_child_' + childCollection.itemName + 's_of_' + parentCollection.itemName;
   };
-  ChildrenOfParentCollection.prototype = new BaseCollection();
+  util.inheritPrototype(Class, BaseCollection);
+  var def = Class.prototype;
   
-  ChildrenOfParentCollection.prototype.getChildren = function(parentItem) {
-    var self = this;
-    var indexEntry = this._index[parentItem._id];
+  def.__addChildToParent = function(indexEntry, childItem)    {var self = this;
+    //TODO: check unique first.
+    self.__ensureIndexEntryHasLiveChildren(indexEntry);
+    indexEntry.document.childIds.push(childItem.Id);
+    self._db.put(indexEntry.document).then(function() {
+      indexEntry.liveChildren.push(childItem)
+    });
+  };
+  
+  def.__removeChildFromParent = function(parentId, childItem)    {var self = this;
+    //TODO: bug if try to unlink while still creation still pending?
+    var deferred = $q.defer();
+    self.__getIndexEntry(parentId).then( function(indexEntry) {
+      util.removeFromArray(indexEntry.document.childIds, childItem._id);
+      delete self._reverseIndex[childItem._id];
+      self._db.put(indexEntry.document).then(function() {
+        self.__ensureIndexEntryHasLiveChildren(indexEntry);
+        util.removeFromArray(indexEntry.liveChildren, childItem);
+        
+        c.log(indexEntry.document.childIds);
+        deferred.resolve();
+      });
+    });
+    return deferred.promise;
+  };
+  
+  def.__ensureIndexEntryHasLiveChildren = function(indexEntry)    {var self = this;
+    var liveChildren = indexEntry.liveChildren;
+    if (!liveChildren) {
+      liveChildren = [];
+      if (indexEntry.document) {
+        angular.forEach(indexEntry.document.childIds, function (childId) {
+          liveChildren.push(self.childCollection.get(childId));
+        });
+      }
+      indexEntry.liveChildren = liveChildren;
+    }
+  };
+  
+  return Class;
+});
+
+
+angular.module('Relate').factory('ChildrenOfParentCollection', function($q, ChildrenOfParentCollectionFunctions, util) {
+  
+  var Class = function(db, parentCollection, childCollection, $window, options)    {var self = this;
+    var options = options || {};
+    self._db = db;
+    self.parentCollection = parentCollection;
+    self.childCollection = childCollection;
+    //format {parentId: {document: Object, liveChildren: []}
+    self._index = {};
+    //format {childId: parentId}
+    self._reverseIndex = {};
+    // e.g. lnk_child_tasks_of_project 
+    self.typeIdentifier = options.childrenOfParentTypeIdentifier || 
+        'lnk_child_' + childCollection.itemName + 's_of_' + parentCollection.itemName;
+  };
+  util.inheritPrototype(Class, ChildrenOfParentCollectionFunctions);
+  var def = Class.prototype;
+  
+  def.getChildren = function(parentItem)    {var self = this;
+    var indexEntry = self._index[parentItem._id];
     if (indexEntry && !indexEntry.pending) {
       self.__ensureIndexEntryHasLiveChildren(indexEntry);
       return indexEntry.liveChildren;
@@ -27,27 +88,26 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
     }
   };
   
-  ChildrenOfParentCollection.prototype.link = function(parentItem, childItem) {
-    // this creates a link.
+  def.link = function(parentItem, childItem)    {var self = this;
+    // self creates a link.
     //TODO: deal with parent being null, which is allowed
-    var self = this;
     var oldParentId = self._reverseIndex[childItem._id];
     if (oldParentId) {
       c.log(oldParentId);
-      this.__removeChildFromParent(oldParentId, childItem);
+      self.__removeChildFromParent(oldParentId, childItem);
     }
-    //TODO: do I need this?
+    //TODO: do I need self?
     var parentItemId;
     if (parentItem) {
       parentItemId = parentItem._id;
     } else {
       parentItemId = null;
     }
-    this._reverseIndex[childItem._id] = parentItemId;
+    self._reverseIndex[childItem._id] = parentItemId;
     
     if (parentItem) {
       //Cannote use __getIndexEntry here because action needs to be immediate.
-      var indexEntry = this._index[parentItem._id];
+      var indexEntry = self._index[parentItem._id];
       if (indexEntry) { // Parent is already in index
         if (indexEntry.pending) { // Db creation is pending
           indexEntry.pendingPromise.then( function(newEntry) {
@@ -69,9 +129,8 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
     }
   };
   
-  ChildrenOfParentCollection.prototype.removeParent = function(parentItem) {
+  def.removeParent = function(parentItem)    {var self = this;
     //In response to a parent object being deleted.
-    var self = this;
     var deferred = $q.defer();
     self.__getIndexEntry(parentItem._id).then( function(indexEntry) {
       if (indexEntry) {
@@ -89,17 +148,16 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
     return deferred.promise;
   };
   
-  ChildrenOfParentCollection.prototype.removeChild = function(childItem) {
-    var oldParentId = this._reverseIndex[childItem._id];
+  def.removeChild = function(childItem)    {var self = this;
+    var oldParentId = self._reverseIndex[childItem._id];
     if (oldParentId) {
-      return this.__removeChildFromParent(oldParentId, childItem);
+      return self.__removeChildFromParent(oldParentId, childItem);
     } else {
       return $q.when(null);
     }
   };
   
-  ChildrenOfParentCollection.prototype._registerDocument = function(document) {
-    var self = this;
+  def._registerDocument = function(document)     {var self = this;
     var newEntry = {document: document};
     self._index[document.parentId] = newEntry;
     angular.forEach(document.childIds, function (childId) {
@@ -108,54 +166,5 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
     return newEntry;
   };
   
-  function removeFromArray(array, item) {
-    //will be unique in list.
-    var index = array.indexOf(item);
-    if (index > -1) {
-      array.splice(index, 1);
-    }
-  }
-  
-  ChildrenOfParentCollection.prototype.__addChildToParent = function(indexEntry, childItem) {
-    //TODO: check unique first.
-    this.__ensureIndexEntryHasLiveChildren(indexEntry);
-    indexEntry.document.childIds.push(childItem.Id);
-    this._db.put(indexEntry.document).then(function() {
-      indexEntry.liveChildren.push(childItem)
-    });
-  };
-  
-  ChildrenOfParentCollection.prototype.__removeChildFromParent = function(parentId, childItem) {
-    //TODO: bug if try to unlink while still creation still pending?
-    var self = this;
-    var deferred = $q.defer();
-    self.__getIndexEntry(parentId).then( function(indexEntry) {
-      removeFromArray(indexEntry.document.childIds, childItem._id);
-      delete self._reverseIndex[childItem._id];
-      self._db.put(indexEntry.document).then(function() {
-        self.__ensureIndexEntryHasLiveChildren(indexEntry);
-        removeFromArray(indexEntry.liveChildren, childItem);
-        
-        c.log(indexEntry.document.childIds);
-        deferred.resolve();
-      });
-    });
-    return deferred.promise;
-  };
-  
-  ChildrenOfParentCollection.prototype.__ensureIndexEntryHasLiveChildren = function(indexEntry) {
-    var self = this;
-    var liveChildren = indexEntry.liveChildren;
-    if (!liveChildren) {
-      liveChildren = [];
-      if (indexEntry.document) {
-        angular.forEach(indexEntry.document.childIds, function (childId) {
-          liveChildren.push(self.childCollection.get(childId));
-        });
-      }
-      indexEntry.liveChildren = liveChildren;
-    }
-  };
-  
-  return ChildrenOfParentCollection;
+  return Class;
 });

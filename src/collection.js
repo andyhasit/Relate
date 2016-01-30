@@ -1,46 +1,44 @@
 
-angular.module('Relate').factory('Collection', function($q, BaseCollection, utils) {
+angular.module('Relate').factory('Collection', function(util, $q, BaseCollection) {
   /*
   All data is stored in collections. Add, delete and save are done via the collection.
   */
-  var Collection = function(db, name, factory, options) {
-    this._db = db;
-    this._factory = factory;
-    this.items = [];
-    this._index = {};
+  var Class = function(db, name, factory, options)    {var self = this;
+    self._db = db;
+    self._factory = factory;
+    self.items = [];
+    self._index = {};
     
     //Can be changed in options. Implement later.
-    this.itemName = name;
-    this.collectionName = name + 's';
-    this.typeIdentifier = name;
-    this.relationships = [];
+    self.itemName = name;
+    self.collectionName = name + 's';
+    self.typeIdentifier = name;
+    self.relationships = [];
   };
-  Collection.prototype = new BaseCollection();
+  util.inheritPrototype(Class, BaseCollection);
+  var def = Class.prototype;
   
-  //TODO: move to utils.
-
-
-  Collection.prototype.getAccessFunctions = function() {var self = this;
+  def.getAccessFunctions = function()    {var self = this;
     var singleItemActions = ['new', 'get', 'save', 'delete'];
     var multipleItemActions = ['find'];
     var accessFunctions = [];
-    var itemName = utils.capitalizeFirstLetter(self.itemName);
+    var itemName = util.capitalizeFirstLetter(self.itemName);
     
     angular.forEach(singleItemActions, function(action) {
-      accessFunctions.push(utils.createAccessFunctionDefinition(action + itemName, self[action]));
+      accessFunctions.push(util.createAccessFunctionDefinition(action + itemName, self[action]));
     });
     angular.forEach(multipleItemActions, function(action) {
-      accessFunctions.push(utils.createAccessFunctionDefinition(action + itemName + 's', self[action]));
+      accessFunctions.push(util.createAccessFunctionDefinition(action + itemName + 's', self[action]));
     });
     return accessFunctions;
   };
     
-  Collection.prototype._registerRelationship = function(relationship) {var self = this;
+  def._registerRelationship = function(relationship)    {var self = this;
     //Registers a relationship -- internal use.
     self.relationships.push(relationship);
   };
   
-  Collection.prototype._registerDocument = function(document) {var self = this;
+  def._registerDocument = function(document)    {var self = this;
     //Registers a document in collection -- internal use.
     var item = new self._factory(document);
     self.items.push(item);
@@ -48,17 +46,17 @@ angular.module('Relate').factory('Collection', function($q, BaseCollection, util
     return item;
   };
   
-  Collection.prototype.new = function(data) {var self = this;
+  def.new = function(data)    {var self = this;
     return self.__createDocument(data);
   };
   
-  Collection.prototype.save = function(item) {var self = this;
+  def.save = function(item)    {var self = this;
     self._db.put(item.document).then(function (result) {
       item.document._rev = result.rev;
     });
   };
   
-  Collection.prototype.delete = function(item) {var self = this;
+  def.delete = function(item)    {var self = this;
     var deferred = $q.defer();
     var childDeletions = [];
     /* Note that calls to relationship._removeItem must not depend on a promise themselves 
@@ -86,13 +84,13 @@ angular.module('Relate').factory('Collection', function($q, BaseCollection, util
     */
   };
   
-  Collection.prototype.get = function(id) {
-    return this._index[id];
+  def.get = function(id)    {var self = this;
+    return self._index[id];
   };
   
-  Collection.prototype.find = function(query) {
-    return this.items;
+  def.find = function(query)    {var self = this;
+    return self.items;
   };
   
-  return Collection;
+  return Class;
 });

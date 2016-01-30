@@ -5,7 +5,7 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
   var ModelPrivateFunctions = function() {
   };
 
-  ModelPrivateFunctions.prototype.__registerTypeIdentifier = function(collection) {var self = this;
+  ModelPrivateFunctions.prototype.__registerTypeIdentifier = function(collection)    {var self = this;
     var typeIdentifier = collection.typeIdentifier;
     if (typeIdentifier in self.__typeIdentifiers) {
       var claimedBy = self.__typeIdentifiers[typeIdentifier];
@@ -17,7 +17,7 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
     }
   };
   
-  ModelPrivateFunctions.prototype.__createAccessFunctions = function () {var self = this;
+  ModelPrivateFunctions.prototype.__createAccessFunctions = function ()    {var self = this;
     angular.forEach(self.__collections, function(collection) {
       angular.forEach(collection.getAccessFunctions(), function(accessFunc) {
         self[accessFunc.ModelFunctionName] = self.__wrapFunction(collection, accessFunc.collectionFunction);
@@ -25,7 +25,7 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
     });
   };
   
-  ModelPrivateFunctions.prototype.__wrapFunction = function (collection, collectionFunction) {var self = this;
+  ModelPrivateFunctions.prototype.__wrapFunction = function (collection, collectionFunction)    {var self = this;
     return function() {
       //chain this call, should fail for now.
       //var deferred = self.__queueCall(collection[baseFunctionName], collection, [collection, data, options]);
@@ -33,14 +33,14 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
     }
   };
   
-  ModelPrivateFunctions.prototype.__queueCall = function (func, target, args) {var self = this;
+  ModelPrivateFunctions.prototype.__queueCall = function (func, target, args)    {var self = this;
     //reuse from other factory, but prevent it from being called yet.
       //chain this call
       var deferred = func.apply(target, args);
     
   };
 
-  ModelPrivateFunctions.prototype.__loadAndLinkEveryting = function () {var self = this;
+  ModelPrivateFunctions.prototype.__loadAndLinkEveryting = function ()    {var self = this;
     // Does the actual loading of data.
     var defer = $q.defer();
     self.__db.allDocs({
@@ -60,7 +60,7 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
     return defer.promise;
   };
   
-  ModelPrivateFunctions.prototype.__registerDocumentToCollection = function (document) {var self = this;
+  ModelPrivateFunctions.prototype.__registerDocumentToCollection = function (document)    {var self = this;
     //Registers a document loaded from the db to the correct collection
     var typeIdentifier = document.type;
     if (typeIdentifier) {
@@ -82,14 +82,14 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
 
 angular.module('Relate').factory('Model', function($q, ModelPrivateFunctions, Collection, ParentChildRelationship) {
   
-  var Model = function(db) {
-    this.__db = db;
-    this.__collections = {};
-    this.__typeIdentifiers = {};
+  var Model = function(db)    {var self = this;
+    self.__db = db;
+    self.__collections = {};
+    self.__typeIdentifiers = {};
   };
   Model.prototype = new ModelPrivateFunctions();
   
-  Model.prototype.addCollection = function(name, factory, options) {var self = this;
+  Model.prototype.addCollection = function(name, factory, options)    {var self = this;
     /*
     name must be singular. Let's do a check that "this" doesn't have this key.
     also check typeIdentifier is unique.
@@ -100,7 +100,7 @@ angular.module('Relate').factory('Model', function($q, ModelPrivateFunctions, Co
     return collection;
   };
   
-  Model.prototype.addParentChildLink = function(parentCollectionName, childCollectionName, options) {var self = this;
+  Model.prototype.addParentChildLink = function(parentCollectionName, childCollectionName, options)    {var self = this;
     var parentCollection = self.__collections[parentCollectionName];
     var childCollection = self.__collections[childCollectionName];
     var relationship = new ParentChildRelationship(self.__db, parentCollection, childCollection, options);
@@ -124,7 +124,7 @@ angular.module('Relate').factory('Model', function($q, ModelPrivateFunctions, Co
     return defer.promise;
   };
   
-  Model.prototype.printInfo = function () {var self = this;
+  Model.prototype.printInfo = function ()    {var self = this;
     angular.forEach(self.__collections, function(collection) {
       angular.forEach(collection.getAccessFunctions(), function(accessFunc) {
         console.log('model.' + accessFunc.ModelFunctionName);

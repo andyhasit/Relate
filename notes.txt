@@ -69,11 +69,8 @@ New way 30/01:
 model queues requests made to it, meaning collection calls have guarantees.
 I can make collection calls from collections, but in that case I need to chain my promises.
 Next steps:
-    build tests for:
-        config
-        loading
-        calls to collections
-        
-    test model.
-    modify tests to go via model.
+    model add and save items
+    link - create setChildParent
+    edit or access a deleted item?
+    
     

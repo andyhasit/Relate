@@ -1,55 +1,57 @@
 
-angular.module('Relate').factory('ParentChildRelationship', function($q, ParentOfChildCollection, ChildrenOfParentCollection, ValueRegister, utils) {
+angular.module('Relate').factory('ParentChildRelationship', function($q, ParentOfChildCollection, ChildrenOfParentCollection, ValueRegister, util) {
   /*
   
   */
 
-  var ParentChildRelationship = function(db, parentCollection, childCollection, options) {
+  var Class = function(db, parentCollection, childCollection, options)    {var self = this;
     var options = options || {};
-    this._db = db;
-    this.parentCollection = parentCollection;
-    this.childCollection = childCollection;
-    this.parentOfChildCollection = new ParentOfChildCollection(db, parentCollection, childCollection, options);
-    this.childrenOfParentCollection = new ChildrenOfParentCollection(db, parentCollection, childCollection, options);
-    this.collectionName = options.collectionName || 
+    self._db = db;
+    self.parentCollection = parentCollection;
+    self.childCollection = childCollection;
+    self.parentOfChildCollection = new ParentOfChildCollection(db, parentCollection, childCollection, options);
+    self.childrenOfParentCollection = new ChildrenOfParentCollection(db, parentCollection, childCollection, options);
+    self.collectionName = options.collectionName || 
         'lnk_' + parentCollection.itemName + '_' + childCollection.itemName + 's';
-    parentCollection._registerRelationship(this);
-    childCollection._registerRelationship(this);
-    this._parentDeleteInProgress = new ValueRegister();
+    parentCollection._registerRelationship(self);
+    childCollection._registerRelationship(self);
+    self._parentDeleteInProgress = new ValueRegister();
   };
-  ParentChildRelationship
+  var def = Class.prototype;
   
-  ParentChildRelationship.prototype.getAccessFunctions = function() {var self = this;
+  def.getAccessFunctions = function()    {var self = this;
     //Registers a relationship -- internal use.
     var singleItemActions = ['new', 'get', 'save', 'delete'];
     var multipleItemActions = ['find'];
     function getCollectionName(collection) {
-      return utils.capitalizeFirstLetter(self[collection].itemName)
+      return util.capitalizeFirstLetter(self[collection].itemName)
     }
     var getParentFnName = 'get' + getCollectionName('childCollection') + getCollectionName('parentCollection');
     var getChildrenFnName = 'get' + getCollectionName('parentCollection') + getCollectionName('childCollection') + 's';
+    var setChildParentFnName = 'set' + getCollectionName('childCollection') + getCollectionName('parentCollection');
     return [
-      utils.createAccessFunctionDefinition(getParentFnName, self.getParent),
-      utils.createAccessFunctionDefinition(getChildrenFnName, self.getChildren),
+      util.createAccessFunctionDefinition(getParentFnName, self.getParent),
+      util.createAccessFunctionDefinition(getChildrenFnName, self.getChildren),
+      util.createAccessFunctionDefinition(setChildParentFnName, self.setParent),
     ];
   };
   
-  ParentChildRelationship.prototype.getParent = function (childItem) {
-    return this.parentOfChildCollection.getParent(childItem);
+  def.getParent = function (childItem)    {var self = this;
+    return self.parentOfChildCollection.getParent(childItem);
   };
   
-  ParentChildRelationship.prototype.getChildren = function (parentItem) {
-    return this.childrenOfParentCollection.getChildren(parentItem);
+  def.getChildren = function (parentItem)    {var self = this;
+    return self.childrenOfParentCollection.getChildren(parentItem);
   };
   
-  ParentChildRelationship.prototype.link = function (parentItem, childItem) {
+  def.setParent = function (childItem, parentItem)    {var self = this;
     //Sets the parent of the child, unlinking child from previous parent if applicable.
-    this.parentOfChildCollection.link(parentItem, childItem);
-    this.childrenOfParentCollection.link(parentItem, childItem);
+    self.parentOfChildCollection.link(parentItem, childItem);
+    self.childrenOfParentCollection.link(parentItem, childItem);
     // TODO: chain promises?
   };
   
-  ParentChildRelationship.prototype._removeItem = function (item) {
+  def._removeItem = function (item)     {var self = this;
     /* Gets called when an item is deleted 
     item can be the parent or the child in the relationship.
     If delete is called on the parent:
@@ -60,7 +62,6 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
       remove from childrenOfParentCollection (but skip this step if it was called as part of parent delete)
     
     */
-    var self = this;
     var deferred = $q.defer();
     if (self._isParentType(item)) {
       self._parentDeleteInProgress.set(item, true);
@@ -88,24 +89,17 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
     return deferred.promise;
   };
   
-  ParentChildRelationship.prototype._isParentType = function (item) {
+  def._isParentType = function (item)    {var self = this;
     var itemType = item.document.type;
-    if (itemType === this.parentCollection.typeIdentifier) {
+    if (itemType === self.parentCollection.typeIdentifier) {
       return true;
-    } else if (itemType === this.parentCollection.typeIdentifier) {
+    } else if (itemType === self.parentCollection.typeIdentifier) {
       return false;
     } else {
       c.log(item);
       throw 'Unrecognised db object type: ' + itemType;
     }
   };
-  /*
-  for(var i = array.length - 1; i >= 0; i--) {
-    if(array[i] === number) {
-       array.splice(i, 1);
-    }
-  }
-  */
 
-  return ParentChildRelationship;
+  return Class;
 });

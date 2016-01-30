@@ -11,6 +11,7 @@ fdescribe('Model', function() {
     $rootScope = _$rootScope_;
     db = _db_;
     model = new _Model_(db);
+    //TODO: change this to fakeDb set, and add getLastX
     spyOn(db, 'allDocs').and.returnValue($q.when({rows:[
       {
         id: 'p001',
@@ -39,26 +40,30 @@ fdescribe('Model', function() {
       }
       
     ]}));
-  }));
-  
-  it('adds collections as expected', function() {
     model.addCollection('project', DummyFactory);
     model.addCollection('task', DummyFactory);
     model.addParentChildLink('project', 'task');
     model.ready();
     $rootScope.$apply();
+  }));
+  
+  fit('normal loading creates functions as expected', function() {
+    task2 = model.getTask('t002');
+    project1 = model.getProject('p001');
+    expect(model.getTaskProject(task2)).toEqual(project1);
+    expect(model.getProjectTasks(project1)).toEqual([task2]);
     expect(model.findTasks().length).toEqual(2);
   });
   
-  it('adds relationships as expected', function() {
-    model.addCollection('project', DummyFactory);
-    model.addCollection('task', DummyFactory);
-    model.addParentChildLink('project', 'task');
-    model.ready();
+  it('can link items', function() {
+    task1 = model.getTask('t001');
+    task2 = model.getTask('t002');
+    project1 = model.getProject('p001');
+    expect(model.getTaskProject(task2)).toEqual(project1);
+    expect(model.getTaskProject(task1)).toEqual(null);
+    model.setTaskProject(task1, project1);
     $rootScope.$apply();
-    task1 = model.getTask('t002');
-    project2 = model.getProject('p001');
-    expect(model.getTaskProject(task1)).toEqual(project2);
+    expect(model.getTaskProject(task1)).toEqual(project1);
   });
   
 });

@@ -1,29 +1,27 @@
 
-angular.module('Relate').factory('ParentOfChildCollection', function($q, BaseCollection) {
-  /*
-  This is for internal use by ParentOfChildCollection.
-  */
-  var ParentOfChildCollection = function(db, parentCollection, childCollection, options) {
+angular.module('Relate').factory('ParentOfChildCollection', function(util, $q, BaseCollection) {
+
+  var Class = function(db, parentCollection, childCollection, options)    {var self = this;
     var options = options || {};
-    this._db = db;
-    this.parentCollection = parentCollection;
-    this.childCollection = childCollection;
-    this._index = {};
+    self._db = db;
+    self.parentCollection = parentCollection;
+    self.childCollection = childCollection;
+    self._index = {};
     // e.g. lnk_child_tasks_of_project
-    this.typeIdentifier = options.parentOfChildTypeIdentifier ||
+    self.typeIdentifier = options.parentOfChildTypeIdentifier ||
         'lnk_parent_' + parentCollection.itemName + '_of_' + childCollection.itemName;
   };
-  ParentOfChildCollection.prototype = new BaseCollection();
-  
-  ParentOfChildCollection.prototype._registerDocument = function(document) {
+  util.inheritPrototype(Class, BaseCollection);
+  var def = Class.prototype;
+
+  def._registerDocument = function(document)    {var self = this;
     //TODO: check for duplicates here?
     var newIndexEntry = {document: document};
-    this._index[document.childId] = newIndexEntry;
+    self._index[document.childId] = newIndexEntry;
     return newIndexEntry;
   };
   
-  ParentOfChildCollection.prototype.link = function(parentItem, childItem) {
-    var self = this;
+  def.link = function(parentItem, childItem)    {var self = this;
     if (parentItem) {
       parentItemId = parentItem._id;
     } else {
@@ -47,8 +45,7 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, BaseCol
     }
   };
   
-  ParentOfChildCollection.prototype.__setChildParent = function(indexEntry, parentItem) {
-    var self = this;
+  def.__setChildParent = function(indexEntry, parentItem)    {var self = this;
     indexEntry.document.parentId = parentItemId;
     self._db.put(indexEntry.document).then(function (result) {
       indexEntry.document._rev = result.rev;
@@ -56,14 +53,12 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, BaseCol
     });
   };
   
-  ParentOfChildCollection.prototype.removeChild = function(childItem) {
-    //
-    var self = this;
+  def.removeChild = function(childItem)    {var self = this;
     var deferred = $q.defer();
     var id = childItem._id;
-    var indexEntry = this._index[id];
+    var indexEntry = self._index[id];
     if (indexEntry) {
-      this._db.remove(indexEntry.document).then(function (result) {
+      self._db.remove(indexEntry.document).then(function (result) {
         delete self._index[id];
         deferred.resolve();
       });
@@ -71,11 +66,10 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, BaseCol
     return deferred.promise;
   };
   
-  ParentOfChildCollection.prototype.getParent = function(childItem) {
+  def.getParent = function(childItem)    {var self = this;
     //Returns actual object, or null.
     //TODO: is it OK for this to return null if not initialised?
-    var self = this;
-    var indexEntry = this._index[childItem._id];
+    var indexEntry = self._index[childItem._id];
     if (indexEntry && !indexEntry.pending) {
       if (angular.isUndefined(indexEntry.liveObject)) {
         var parent = self.parentCollection.get(indexEntry.document.parentId);
@@ -90,7 +84,7 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, BaseCol
     }
   };
   
-  return ParentOfChildCollection;
+  return Class;
 });
 
     
