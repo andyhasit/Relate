@@ -78,7 +78,7 @@ angular.module('Relate').factory('ParentOfChildCollection', function($q, BaseCol
     var indexEntry = this._index[childItem._id];
     if (indexEntry && !indexEntry.pending) {
       if (angular.isUndefined(indexEntry.liveObject)) {
-        var parent = self.parentCollection.getItem(indexEntry.document.parentId);
+        var parent = self.parentCollection.get(indexEntry.document.parentId);
         if (angular.isUndefined(parent)) {
           parent = null;
         }

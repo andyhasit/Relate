@@ -1,5 +1,5 @@
 
-angular.module('Relate').factory('Collection', function($q, BaseCollection) {
+angular.module('Relate').factory('Collection', function($q, BaseCollection, utils) {
   /*
   All data is stored in collections. Add, delete and save are done via the collection.
   */
@@ -18,26 +18,19 @@ angular.module('Relate').factory('Collection', function($q, BaseCollection) {
   Collection.prototype = new BaseCollection();
   
   //TODO: move to utils.
-  function capitalizeFirstLetter(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-  }
+
 
   Collection.prototype.getAccessFunctions = function() {var self = this;
     var singleItemActions = ['new', 'get', 'save', 'delete'];
     var multipleItemActions = ['find'];
     var accessFunctions = [];
-    var itemName = capitalizeFirstLetter(self.itemName);
-    function getFnDef(name, fn) {
-      return {
-        ModelFunctionName: name,
-        collectionFunction: fn
-      }
-    }
+    var itemName = utils.capitalizeFirstLetter(self.itemName);
+    
     angular.forEach(singleItemActions, function(action) {
-      accessFunctions.push(getFnDef(action + itemName, self[action]));
+      accessFunctions.push(utils.createAccessFunctionDefinition(action + itemName, self[action]));
     });
     angular.forEach(multipleItemActions, function(action) {
-      accessFunctions.push(getFnDef(action + itemName + 's', self[action]));
+      accessFunctions.push(utils.createAccessFunctionDefinition(action + itemName + 's', self[action]));
     });
     return accessFunctions;
   };

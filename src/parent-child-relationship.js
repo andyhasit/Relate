@@ -1,5 +1,5 @@
 
-angular.module('Relate').factory('ParentChildRelationship', function($q, ParentOfChildCollection, ChildrenOfParentCollection, ValueRegister) {
+angular.module('Relate').factory('ParentChildRelationship', function($q, ParentOfChildCollection, ChildrenOfParentCollection, ValueRegister, utils) {
   /*
   
   */
@@ -17,26 +17,21 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
     childCollection._registerRelationship(this);
     this._parentDeleteInProgress = new ValueRegister();
   };
+  ParentChildRelationship
   
-  ParentChildRelationship.prototype.getAccessFunctions = function() {
+  ParentChildRelationship.prototype.getAccessFunctions = function() {var self = this;
     //Registers a relationship -- internal use.
     var singleItemActions = ['new', 'get', 'save', 'delete'];
     var multipleItemActions = ['find'];
-    var accessFunctions = [];
-    var itemName = capitalizeFirstLetter(self.itemName);
-    function getFnDef(name, fn) {
-      return {
-        ModelFunctionName: name,
-        collectionFunction: fn
-      }
+    function getCollectionName(collection) {
+      return utils.capitalizeFirstLetter(self[collection].itemName)
     }
-    angular.forEach(singleItemActions, function(action) {
-      accessFunctions.push(getFnDef(action + itemName, self[action]));
-    });
-    angular.forEach(multipleItemActions, function(action) {
-      accessFunctions.push(getFnDef(action + itemName + 's', self[action]));
-    });
-    return accessFunctions;
+    var getParentFnName = 'get' + getCollectionName('childCollection') + getCollectionName('parentCollection');
+    var getChildrenFnName = 'get' + getCollectionName('parentCollection') + getCollectionName('childCollection') + 's';
+    return [
+      utils.createAccessFunctionDefinition(getParentFnName, self.getParent),
+      utils.createAccessFunctionDefinition(getChildrenFnName, self.getChildren),
+    ];
   };
   
   ParentChildRelationship.prototype.getParent = function (childItem) {

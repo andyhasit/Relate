@@ -150,7 +150,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function($q, Base
       liveChildren = [];
       if (indexEntry.document) {
         angular.forEach(indexEntry.document.childIds, function (childId) {
-          liveChildren.push(self.childCollection.getItem(childId));
+          liveChildren.push(self.childCollection.get(childId));
         });
       }
       indexEntry.liveChildren = liveChildren;

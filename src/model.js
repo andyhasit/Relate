@@ -26,7 +26,7 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
   };
   
   ModelPrivateFunctions.prototype.__wrapFunction = function (collection, collectionFunction) {var self = this;
-    return function(arguments) {
+    return function() {
       //chain this call, should fail for now.
       //var deferred = self.__queueCall(collection[baseFunctionName], collection, [collection, data, options]);
       return collectionFunction.apply(collection, arguments);
@@ -68,7 +68,7 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
       if (collection) {
         collection._registerDocument(document, typeIdentifier); //TODO: is typeIdentifier needed?
       } else {
-        throw('Could not load document \"' + document._id + '\" as type was not recognised (' + typeIdentifier + ')');
+        console.log('Could not load document \"' + document._id + '\" as type was not recognised (' + typeIdentifier + ')');
       }
     } else {
       //self.__db.remove(document);
@@ -101,11 +101,10 @@ angular.module('Relate').factory('Model', function($q, ModelPrivateFunctions, Co
   };
   
   Model.prototype.addParentChildLink = function(parentCollectionName, childCollectionName, options) {var self = this;
-    //TODO, change to use strings
     var parentCollection = self.__collections[parentCollectionName];
     var childCollection = self.__collections[childCollectionName];
     var relationship = new ParentChildRelationship(self.__db, parentCollection, childCollection, options);
-    self.__collections[name] = relationship.collectionName;
+    self.__collections[name] = relationship;
     self.__registerTypeIdentifier(relationship.parentOfChildCollection);
     self.__registerTypeIdentifier(relationship.childrenOfParentCollection);
     return relationship;
