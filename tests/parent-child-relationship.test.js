@@ -1,6 +1,6 @@
 c = console; 
 
-xdescribe('ParentChildRelationship', function() {
+describe('ParentChildRelationship', function() {
   
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
@@ -46,7 +46,7 @@ xdescribe('ParentChildRelationship', function() {
     expect(relationship.getParent(task2)).toEqual(project2);
   });
   
-  fit('removeItem with parent calls remove on child collection', function() {
+  it('removeItem with parent calls remove on child collection', function() {
     spyOn(taskCollection, 'remove').and.callThrough();
     relationship.link(project1, task1);
     //relationship.link(null, task1);
