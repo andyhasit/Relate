@@ -18,6 +18,27 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
     this._parentDeleteInProgress = new ValueRegister();
   };
   
+  ParentChildRelationship.prototype.getAccessFunctions = function() {
+    //Registers a relationship -- internal use.
+    var singleItemActions = ['new', 'get', 'save', 'delete'];
+    var multipleItemActions = ['find'];
+    var accessFunctions = [];
+    var itemName = capitalizeFirstLetter(self.itemName);
+    function getFnDef(name, fn) {
+      return {
+        ModelFunctionName: name,
+        collectionFunction: fn
+      }
+    }
+    angular.forEach(singleItemActions, function(action) {
+      accessFunctions.push(getFnDef(action + itemName, self[action]));
+    });
+    angular.forEach(multipleItemActions, function(action) {
+      accessFunctions.push(getFnDef(action + itemName + 's', self[action]));
+    });
+    return accessFunctions;
+  };
+  
   ParentChildRelationship.prototype.getParent = function (childItem) {
     return this.parentOfChildCollection.getParent(childItem);
   };

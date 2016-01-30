@@ -17,31 +17,55 @@ angular.module('Relate').factory('Collection', function($q, BaseCollection) {
   };
   Collection.prototype = new BaseCollection();
   
-  Collection.prototype._registerRelationship = function(relationship) {
+  //TODO: move to utils.
+  function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  }
+
+  Collection.prototype.getAccessFunctions = function() {var self = this;
+    var singleItemActions = ['new', 'get', 'save', 'delete'];
+    var multipleItemActions = ['find'];
+    var accessFunctions = [];
+    var itemName = capitalizeFirstLetter(self.itemName);
+    function getFnDef(name, fn) {
+      return {
+        ModelFunctionName: name,
+        collectionFunction: fn
+      }
+    }
+    angular.forEach(singleItemActions, function(action) {
+      accessFunctions.push(getFnDef(action + itemName, self[action]));
+    });
+    angular.forEach(multipleItemActions, function(action) {
+      accessFunctions.push(getFnDef(action + itemName + 's', self[action]));
+    });
+    return accessFunctions;
+  };
+    
+  Collection.prototype._registerRelationship = function(relationship) {var self = this;
     //Registers a relationship -- internal use.
-    this.relationships.push(relationship);
+    self.relationships.push(relationship);
   };
   
-  Collection.prototype._registerDocument = function(document) {
+  Collection.prototype._registerDocument = function(document) {var self = this;
     //Registers a document in collection -- internal use.
-    var item = new this._factory(document);
-    this.items.push(item);
-    this._index[document._id] = item;
+    var item = new self._factory(document);
+    self.items.push(item);
+    self._index[document._id] = item;
     return item;
   };
   
-  Collection.prototype.add = function(data) {
-    return this.__createDocument(data);
+  Collection.prototype.new = function(data) {var self = this;
+    return self.__createDocument(data);
   };
   
-  Collection.prototype.save = function(item) {
-    this._db.put(item.document).then(function (result) {
+  Collection.prototype.save = function(item) {var self = this;
+    self._db.put(item.document).then(function (result) {
       item.document._rev = result.rev;
     });
   };
   
-  Collection.prototype.remove = function(item) {
-    var self = this;
+  Collection.prototype.delete = function(item) {var self = this;
     var deferred = $q.defer();
     var childDeletions = [];
     /* Note that calls to relationship._removeItem must not depend on a promise themselves 
@@ -69,8 +93,12 @@ angular.module('Relate').factory('Collection', function($q, BaseCollection) {
     */
   };
   
-  Collection.prototype.getItem = function(id) {
+  Collection.prototype.get = function(id) {
     return this._index[id];
+  };
+  
+  Collection.prototype.find = function(query) {
+    return this.items;
   };
   
   return Collection;
