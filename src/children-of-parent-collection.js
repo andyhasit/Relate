@@ -33,7 +33,6 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
       return [];
     }
     /*
-    c.log(indexEntry);
     if (indexEntry && !indexEntry.pending) {
       self.__ensureIndexEntryHasLiveChildren(indexEntry);
       return indexEntry.liveChildren;
@@ -48,7 +47,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
     //TODO: deal with parent being null, which is allowed
     var oldParentId = self._reverseIndex[childItem._id];
     if (oldParentId) {
-      c.log(oldParentId);
+      debug(oldParentId);
       self.__removeChildFromParent(oldParentId, childItem);
     }
     //TODO: do I need self?
@@ -90,7 +89,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
     self.__getIndexEntry(parentItem._id).then( function(indexEntry) {
       if (indexEntry) {
         if (indexEntry.document.childrenIds.length > 0) {
-          c.log(indexEntry);
+          debug(indexEntry);
           throw 'Cannot delete parent object as it still has children';
         } else {
           self._db.remove(indexEntry.document).then(function() {
@@ -153,7 +152,7 @@ angular.module('Relate').factory('ChildrenOfParentCollectionFunctions', function
         self.__ensureIndexEntryHasLiveChildren(indexEntry);
         util.removeFromArray(indexEntry.liveChildren, childItem);
         
-        c.log(indexEntry.document.childrenIds);
+        debug(indexEntry.document.childrenIds);
         deferred.resolve();
       });
     });

@@ -96,7 +96,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
     } else if (itemType === self.parentCollection.typeIdentifier) {
       return false;
     } else {
-      c.log(item);
+      console.log(item);
       throw 'Unrecognised db object type: ' + itemType;
     }
   };

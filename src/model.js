@@ -1,4 +1,59 @@
 
+angular.module('Relate').factory('Model', function($q, ModelPrivateFunctions, Collection, ParentChildRelationship) {
+  
+  var Model = function(db)    {var self = this;
+    self.__db = db;
+    self.__collections = {};
+    self.__typeIdentifiers = {};
+  };
+  Model.prototype = new ModelPrivateFunctions();
+  
+  Model.prototype.addCollection = function(name, fields, factory, options)    {var self = this;
+    /*
+    name must be singular. Let's do a check that "this" doesn't have this key.
+    also check typeIdentifier is unique.
+    */
+    var collection = new Collection(self.__db, name, fields, factory, options);
+    self.__collections[name] = collection;
+    self.__registerTypeIdentifier(collection);
+    return collection;
+  };
+  
+  Model.prototype.addParentChildLink = function(parentCollectionName, childCollectionName, options)    {var self = this;
+    var parentCollection = self.__collections[parentCollectionName];
+    var childCollection = self.__collections[childCollectionName];
+    var relationship = new ParentChildRelationship(self.__db, parentCollection, childCollection, options);
+    self.__collections[name] = relationship;
+    self.__registerTypeIdentifier(relationship.parentOfChildCollection);
+    self.__registerTypeIdentifier(relationship.childrenOfParentCollection);
+    return relationship;
+  };
+  
+  Model.prototype.ready = function () { var self = this;
+    //Returns a promise that ensures data is only fetched once.
+    var defer = $q.defer();
+    if (self.__isAllLoaded) {
+      defer.resolve();
+    } else {
+      self.__loadAndLinkEveryting().then( function () {
+        self.__isAllLoaded = true;
+        defer.resolve();
+      });
+    }
+    return defer.promise;
+  };
+  
+  Model.prototype.printInfo = function ()    {var self = this;
+    angular.forEach(self.__collections, function(collection) {
+      angular.forEach(collection.getAccessFunctions(), function(accessFunc) {
+        console.log('model.' + accessFunc.ModelFunctionName);
+      });
+    });
+  };
+   return Model;
+});
+  
+
 
 angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
   
@@ -79,58 +134,3 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
   return ModelPrivateFunctions;
 });
 
-
-angular.module('Relate').factory('Model', function($q, ModelPrivateFunctions, Collection, ParentChildRelationship) {
-  
-  var Model = function(db)    {var self = this;
-    self.__db = db;
-    self.__collections = {};
-    self.__typeIdentifiers = {};
-  };
-  Model.prototype = new ModelPrivateFunctions();
-  
-  Model.prototype.addCollection = function(name, factory, options)    {var self = this;
-    /*
-    name must be singular. Let's do a check that "this" doesn't have this key.
-    also check typeIdentifier is unique.
-    */
-    var collection = new Collection(self.__db, name, factory, options);
-    self.__collections[name] = collection;
-    self.__registerTypeIdentifier(collection);
-    return collection;
-  };
-  
-  Model.prototype.addParentChildLink = function(parentCollectionName, childCollectionName, options)    {var self = this;
-    var parentCollection = self.__collections[parentCollectionName];
-    var childCollection = self.__collections[childCollectionName];
-    var relationship = new ParentChildRelationship(self.__db, parentCollection, childCollection, options);
-    self.__collections[name] = relationship;
-    self.__registerTypeIdentifier(relationship.parentOfChildCollection);
-    self.__registerTypeIdentifier(relationship.childrenOfParentCollection);
-    return relationship;
-  };
-  
-  Model.prototype.ready = function () { var self = this;
-    //Returns a promise that ensures data is only fetched once.
-    var defer = $q.defer();
-    if (self.__isAllLoaded) {
-      defer.resolve();
-    } else {
-      self.__loadAndLinkEveryting().then( function () {
-        self.__isAllLoaded = true;
-        defer.resolve();
-      });
-    }
-    return defer.promise;
-  };
-  
-  Model.prototype.printInfo = function ()    {var self = this;
-    angular.forEach(self.__collections, function(collection) {
-      angular.forEach(collection.getAccessFunctions(), function(accessFunc) {
-        console.log('model.' + accessFunc.ModelFunctionName);
-      });
-    });
-  };
-   return Model;
-});
-  

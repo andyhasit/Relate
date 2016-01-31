@@ -3,6 +3,13 @@
 .and.returnValue($q.when({}));
 
 */
+function debug(item, cue){
+  if (cue) {
+    console.log('' + cue);
+  }
+  console.log('' + item);
+}
+
 angular.module('PouchFake', []).service('db', function($q) {
   var self = this;
   self.nextId = 1;
@@ -106,8 +113,6 @@ angular.module('PouchFake', []).service('db', function($q) {
   
 });
 
-var DummyFactory = function (document) {
-  this.document = document;
-  this._id = document._id;
+var DummyFactory = function () {
 };
   

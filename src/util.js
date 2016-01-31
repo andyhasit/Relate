@@ -21,13 +21,24 @@ angular.module('Relate').service('util', function($q) {
     if (index > -1) {
       array.splice(index, 1);
     }
+  };
+  
+  self.filterIndex = function(index, test) {
+    //accepts an object like array.
+    var filteredItems = [];
+    angular.forEach(index, function(item) {
+      if (test(item)) {
+        filteredItems.push(item);
+      }
+    });
+    return filteredItems;
   }
   
   self.inheritPrototype = function(Child, Parent) {
     var childProto = Child.prototype;
     var parentProto = Parent.prototype;
     for (var prop in parentProto) {
-      if (typeof parentProto[prop] == "function") {
+      if (typeof parentProto[prop] == 'function') {
         childProto[prop] = parentProto[prop];
       }
     }

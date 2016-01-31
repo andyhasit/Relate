@@ -40,8 +40,8 @@ fdescribe('Model', function() {
       }
       
     ]}));
-    model.addCollection('project', DummyFactory);
-    model.addCollection('task', DummyFactory);
+    model.addCollection('project', ['name'], DummyFactory);
+    model.addCollection('task', ['name'], DummyFactory);
     model.addParentChildLink('project', 'task');
     model.ready();
     $rootScope.$apply();
@@ -52,10 +52,47 @@ fdescribe('Model', function() {
     project1 = model.getProject('p001');
     expect(model.getTaskProject(task2)).toEqual(project1);
     expect(model.getProjectTasks(project1)).toEqual([task2]);
-    expect(model.findTasks().length).toEqual(2);
+    expect(model.findTasks({}).length).toEqual(2);
+  });
+  
+  it('loaded items have expected properties', function() {
+    task2 = model.getTask('t002');
+    project1 = model.getProject('p001');
+    expect(model.getTaskProject(task2)).toEqual(project1);
+    expect(model.getProjectTasks(project1)).toEqual([task2]);
+    expect(model.findTasks({}).length).toEqual(2);
+  });
+
+  it('find works with query as object', function() {
+    task1 = model.getTask('t001');
+    var results = model.findTasks({name: 'task1'});
+    expect(results).toEqual([task1]);
+  });
+  
+  it('can create items', function() {
+    task1 = model.getTask('t001');
+    task2 = model.getTask('t002');
+    project1 = model.getProject('p001');
+    var task3;
+    model.newTask({name: 'unicycle'}).then(function() {
+      task3 = model.findTasks({name: 'unicycle'})[0];
+    });
+    $rootScope.$apply();
+    expect(task3.name).toEqual('unicycle');
   });
   
   it('can link items', function() {
+    task1 = model.getTask('t001');
+    task2 = model.getTask('t002');
+    project1 = model.getProject('p001');
+    expect(model.getTaskProject(task2)).toEqual(project1);
+    expect(model.getTaskProject(task1)).toEqual(null);
+    model.setTaskProject(task1, project1);
+    $rootScope.$apply();
+    expect(model.getTaskProject(task1)).toEqual(project1);
+  });
+  
+  xit('can link and unlink items at will', function() {
     task1 = model.getTask('t001');
     task2 = model.getTask('t002');
     project1 = model.getProject('p001');

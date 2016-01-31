@@ -3,12 +3,11 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   /*
   All data is stored in collections. Add, delete and save are done via the collection.
   */
-  var Class = function(db, name, factory, options)    {var self = this;
+  var Class = function(db, name, fields, factory, options)    {var self = this;
     self._db = db;
     self._factory = factory;
-    self.items = [];
     self._index = {};
-    
+    self.__fields = fields; //TODO: maybe copy for safety?
     //Can be changed in options. Implement later.
     self.itemName = name;
     self.collectionName = name + 's';
@@ -40,20 +39,34 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   
   def.loadDocument = function(document)    {var self = this;
     //Registers a document in collection -- internal use.
-    var item = new self._factory(document);
-    self.items.push(item);
+    var item = new self._factory();
+    self.__copyFieldValues(document, item);
+    item._id = document._id;
+    item._rev = document._rev;
     self._index[document._id] = item;
     return item;
   };
   
+  def.__copyFieldValues = function(source, target)    {var self = this;
+    angular.forEach(self.__fields, function(field) {
+      target[field] = source[field];
+    });
+  }
+  
   def.new = function(data)    {var self = this;
+    //returns a promise, which goes via loadDocument()
     return self.__createDocument(data);
   };
   
   def.save = function(item)    {var self = this;
-    self._db.put(item.document).then(function (result) {
-      item.document._rev = result.rev;
+    var deferred = $q.defer();
+    var document = {};
+    self.__copyFieldValues(item, document);
+    self._db.put(document).then(function (result) {
+      item._rev = result.rev;
+      deferred.resolve(item._rev);
     });
+    return deferred.promise;
   };
   
   def.delete = function(item)    {var self = this;
@@ -67,21 +80,10 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     $q.all(childDeletions).then(function() {
       self._db.remove(item).then(function (result) {
         delete self._index[item._id];
-        self.items.splice(self.items.indexOf(item), 1);//TODO: test this.
         deferred.resolve();
       });
     });
     return deferred.promise;
-    /*
-    Old sync way:
-    angular.forEach(self.relationships, function(relationship) {
-      relationship._removeItem(item);
-    });
-    this._db.remove(item).then(function (result) {
-      delete self._index[item._id];
-      self.items.splice(self.items.indexOf(item), 1);//TODO: test this.
-    });
-    */
   };
   
   def.get = function(id)    {var self = this;
@@ -89,7 +91,23 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   };
   
   def.find = function(query)    {var self = this;
-    return self.items;
+    //query can be an object like {name: 'do it'}
+    var test;
+    if (typeof query == 'function') {
+      test = query;
+    } else if (typeof query == 'object') {
+      test = function(item) {
+        for (prop in query) {
+          if (item[prop] !== query[prop]) {//TODO: 
+            return false;
+          }
+          return true;
+        }
+      }
+    } else {
+      throw 'Collection.find expects a function or object';
+    }
+    return util.filterIndex(self._index, test);
   };
   
   return Class;
