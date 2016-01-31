@@ -47,26 +47,53 @@ fdescribe('Model', function() {
     $rootScope.$apply();
   }));
   
-  it('normal loading creates functions as expected', function() {
+  it('creates accessor functions', function() {
+    expect(typeof model.newTask).toEqual('function');
+    expect(typeof model.findTasks).toEqual('function');
+    expect(typeof model.saveTask).toEqual('function');
+    expect(typeof model.deleteTask).toEqual('function');
+    expect(typeof model.getTaskProject).toEqual('function');
+    expect(typeof model.getProjectTasks).toEqual('function');
+  });
+   
+  it('getItem works on fresh load', function() {
     task2 = model.getTask('t002');
-    project1 = model.getProject('p001');
-    expect(model.getTaskProject(task2)).toEqual(project1);
-    expect(model.getProjectTasks(project1)).toEqual([task2]);
-    expect(model.findTasks({}).length).toEqual(2);
+    expect(typeof task2).toEqual('object');
+    expect(task2._id).toEqual('t002');
   });
   
   it('loaded items have expected properties', function() {
     task2 = model.getTask('t002');
     project1 = model.getProject('p001');
-    expect(model.getTaskProject(task2)).toEqual(project1);
-    expect(model.getProjectTasks(project1)).toEqual([task2]);
-    expect(model.findTasks({}).length).toEqual(2);
+    expect(task2._id).toEqual('t002');
+    expect(task2._rev).toEqual('1-t002');
+    expect(task2.name).toEqual('task2');
   });
-
-  it('find works with query as object', function() {
+  
+  it('getParent works on fresh load', function() {
+    task2 = model.getTask('t002');
+    project1 = model.getProject('p001');
+    expect(model.getTaskProject(task2)).toEqual(project1);
+  });
+  
+  it('getChildren works on fresh load', function() {
+    task2 = model.getTask('t002');
+    project1 = model.getProject('p001');
+    expect(model.getProjectTasks(project1)).toEqual([task2]);
+  });
+  
+  /*save delete new */
+  
+  it('find works with object as query', function() {
     task1 = model.getTask('t001');
     var results = model.findTasks({name: 'task1'});
     expect(results).toEqual([task1]);
+  });
+  
+  it('find with empty object as query returns all objects', function() {
+    task1 = model.getTask('t001');
+    var results = model.findTasks({});
+    expect(results).toEqual([task1, task2]);
   });
   
   it('can create items', function() {
@@ -79,6 +106,7 @@ fdescribe('Model', function() {
     });
     $rootScope.$apply();
     expect(task3.name).toEqual('unicycle');
+    expect(model.findTasks({}).length).toEqual(3);
   });
   
   it('can link items', function() {
@@ -87,9 +115,12 @@ fdescribe('Model', function() {
     project1 = model.getProject('p001');
     expect(model.getTaskProject(task2)).toEqual(project1);
     expect(model.getTaskProject(task1)).toEqual(null);
+    expect(model.getProjectTasks(project1)).toEqual([task2]);
+    
     model.setTaskProject(task1, project1);
     $rootScope.$apply();
     expect(model.getTaskProject(task1)).toEqual(project1);
+    expect(model.getProjectTasks(project1)).toEqual([task2, task1]);
   });
   
   xit('can link and unlink items at will', function() {

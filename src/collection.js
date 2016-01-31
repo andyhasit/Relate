@@ -91,18 +91,18 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   };
   
   def.find = function(query)    {var self = this;
-    //query can be an object like {name: 'do it'}
+    //query can be an object like {name: 'do it'} or empty, or function
     var test;
     if (typeof query == 'function') {
       test = query;
     } else if (typeof query == 'object') {
       test = function(item) {
         for (prop in query) {
-          if (item[prop] !== query[prop]) {//TODO: 
+          if (item[prop] !== query[prop]) {
             return false;
           }
-          return true;
         }
+        return true;
       }
     } else {
       throw 'Collection.find expects a function or object';
