@@ -14,7 +14,7 @@ angular.module('Relate').factory('ParentOfChildCollection', function(util, $q, B
   util.inheritPrototype(Class, BaseCollection);
   var def = Class.prototype;
 
-  def._registerDocument = function(document)    {var self = this;
+  def.loadDocument = function(document)    {var self = this;
     //TODO: check for duplicates here?
     var newIndexEntry = {document: document};
     self._index[document.childId] = newIndexEntry;

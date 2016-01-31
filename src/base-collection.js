@@ -45,7 +45,7 @@ angular.module('Relate').factory('BaseCollection', function($q) {
     self._db.post(document).then( function (result) {
       if (result.ok) {
         self._db.get(result.id).then( function (docFromDb) {        
-          defer.resolve(self._registerDocument(docFromDb));
+          defer.resolve(self.loadDocument(docFromDb));
         });
       } else {
         console.log(result);

@@ -50,7 +50,7 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
       //Register each doc to its collection
       angular.forEach(result.rows, function(row){
         //delete all:  self.__db.remove(row.doc);
-        self.__registerDocumentToCollection(row.doc);
+        self.__loadDocumentToCollection(row.doc);
       });
       self.__createAccessFunctions();
       defer.resolve();
@@ -60,13 +60,13 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
     return defer.promise;
   };
   
-  ModelPrivateFunctions.prototype.__registerDocumentToCollection = function (document)    {var self = this;
+  ModelPrivateFunctions.prototype.__loadDocumentToCollection = function (document)    {var self = this;
     //Registers a document loaded from the db to the correct collection
     var typeIdentifier = document.type;
     if (typeIdentifier) {
       var collection = self.__typeIdentifiers[typeIdentifier];
       if (collection) {
-        collection._registerDocument(document, typeIdentifier); //TODO: is typeIdentifier needed?
+        collection.loadDocument(document, typeIdentifier); //TODO: is typeIdentifier needed?
       } else {
         console.log('Could not load document \"' + document._id + '\" as type was not recognised (' + typeIdentifier + ')');
       }

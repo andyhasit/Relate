@@ -47,7 +47,7 @@ fdescribe('Model', function() {
     $rootScope.$apply();
   }));
   
-  fit('normal loading creates functions as expected', function() {
+  it('normal loading creates functions as expected', function() {
     task2 = model.getTask('t002');
     project1 = model.getProject('p001');
     expect(model.getTaskProject(task2)).toEqual(project1);

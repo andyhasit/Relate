@@ -38,7 +38,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     self.relationships.push(relationship);
   };
   
-  def._registerDocument = function(document)    {var self = this;
+  def.loadDocument = function(document)    {var self = this;
     //Registers a document in collection -- internal use.
     var item = new self._factory(document);
     self.items.push(item);
