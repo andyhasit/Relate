@@ -42,7 +42,11 @@ describe('Model', function() {
     ]}));
     model.defineCollection('project', ['name'], DummyFactory);
     model.defineCollection('task', ['name'], DummyFactory);
-    model.defineParentChildLink('project', 'task');
+    model.defineRelationship({
+      type:'parentChild',
+      parent:'project', 
+      child:'task'
+    });
     model.onDataReady();
     $rootScope.$apply();
     

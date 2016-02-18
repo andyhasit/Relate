@@ -8,15 +8,10 @@ angular.module('Relate').factory('BaseCollection', function($q) {
     self._index = {};
   };
   
-  BaseCollection.prototype._registerDocument = function(docFromDb) {
-    //Presumably adds the document to the index.
-    //throw 'Must implement in derived class';
-  };
-  
   BaseCollection.prototype.__createPending = function(key, document)    {var self = this;
     self._index[key] = {
       pending: true,
-      pendingPromise: self.__createDocument(document)
+      pendingPromise: self.__createDocumentInDb(document)
     };
   };
   
@@ -38,14 +33,14 @@ angular.module('Relate').factory('BaseCollection', function($q) {
     return defer.promise;
   };
   
-  BaseCollection.prototype.__createDocument = function(document)    {var self = this;
+  BaseCollection.prototype.__createDocumentInDb = function(document)    {var self = this;
     //Creates the new document in the database and loads it.
     var defer = $q.defer();
     document.type = self.typeIdentifier;
-    self._db.post(document).then( function (result) {
+    self.__db.post(document).then( function (result) {
       if (result.ok) {
-        self._db.get(result.id).then( function (docFromDb) {        
-          defer.resolve(self.loadDocument(docFromDb));
+        self.__db.get(result.id).then( function (docFromDb) {        
+          defer.resolve(self.loadDocumentFromDb(docFromDb));
         });
       } else {
         console.log(result);

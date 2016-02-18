@@ -3,28 +3,30 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
 
   var ChildrenOfParentCollection = function(db, parentCollection, childCollection, $window, options)    {var self = this;
     var options = options || {};
-    self._db = db;
-    self.parentCollection = parentCollection;
-    self.childCollection = childCollection;
-    self._index = {};//format {parentId: {document: Object, liveChildren: []}
-    self._reverseIndex = {};//format {childId: parentId}
-    self.typeIdentifier = options.childrenOfParentTypeIdentifier ||
-        'lnk_child_' + childCollection.itemName + 's_of_' + parentCollection.itemName; // e.g. lnk_child_tasks_of_project
+    self.dbDocumentType = options.childrenOfParentDocumentType || // e.g. lnk_child_tasks_of_project
+        'lnk_child_' + childCollection.itemName + 's_of_' + parentCollection.itemName; 
+        
+    self.__db = db;
+    self.__parentCollection = parentCollection;
+    self.__childCollection = childCollection;
+    self.__index = {};//format {parentId: {document: Object, liveChildren: []}
+    self.__reverseIndex = {};//format {childId: parentId}
+    
   };
   util.inheritPrototype(ChildrenOfParentCollection, BaseCollection);
   var def = ChildrenOfParentCollection.prototype;
-
-  def.loadDocument = function(document)     {var self = this;
+  
+  def.loadDocumentFromDb = function(document)     {var self = this;
     var newEntry = {document: document};
-    self._index[document.parentId] = newEntry;
+    self.__index[document.parentId] = newEntry;
     angular.forEach(document.childrenIds, function (childId) {
-      self._reverseIndex[childId] = document.parentId;
+      self.__reverseIndex[childId] = document.parentId;
     });
     return newEntry;
   };
 
   def.getChildren = function(parentItem)    {var self = this;
-    var indexEntry = self._index[parentItem._id];
+    var indexEntry = self.__index[parentItem._id];
     if (indexEntry) {
       self.__ensureIndexEntryHasLiveChildren(indexEntry);
       return indexEntry.liveChildren;
@@ -44,7 +46,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
     self.__unlinkChildFromPreviousParent(childItem).then(function() {
       var innerDeferred;
       if (parentItem) {
-        var indexEntry = self._index[parentItem._id];
+        var indexEntry = self.__index[parentItem._id];
         if (indexEntry) {
           innerDeferred = self.__addChildToParent(indexEntry, childItem);
         } else {
@@ -52,15 +54,15 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
               parentId: parentItem._id,
               childrenIds: [childItem._id]
             };
-          innerDeferred = self.__createDocument(doc);
+          innerDeferred = self.__createDocumentInDb(doc);
         }
         innerDeferred.then( function () {
-          self._reverseIndex[childItem._id] = parentItem.id;
+          self.__reverseIndex[childItem._id] = parentItem.id;
           deferred.resolve();
         });
       } else {
         //parent is null, no need to create a link
-        delete self._reverseIndex[childItem._id];
+        delete self.__reverseIndex[childItem._id];
         deferred.resolve();
       }
     });
@@ -70,19 +72,18 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
   def.onParentDeleted = function(parentItem)    {var self = this;
     //In response to a parent object being deleted.
     var deferred = $q.defer();
-    self.__getIndexEntry(parentItem._id).then( function(indexEntry) {
-      if (indexEntry) {
-        if (indexEntry.document.childrenIds.length > 0) {
-          debug(indexEntry);
-          throw 'Cannot delete parent object as it still has children';
-        } else {
-          self._db.remove(indexEntry.document).then(function() {
-            delete self._index[parentItem._id];
-            deferred.resolve();
-          });
-        }
+    indexEntry = self.__index[parentItem._id];
+    if (indexEntry) {
+      if (indexEntry.document.childrenIds.length > 0) {
+        debug(indexEntry);
+        throw 'Cannot delete parent object as it still has children';
+      } else {
+        self.__db.remove(indexEntry.document).then(function() {
+          delete self.__index[parentItem._id];
+          deferred.resolve();
+        });
       }
-    });
+    }
     return deferred.promise;
   };
 
@@ -97,7 +98,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
       deferred.resolve();
     } else {
       indexEntry.document.childrenIds.push(childItem.Id);
-      self._db.put(indexEntry.document).then(function() {
+      self.__db.put(indexEntry.document).then(function() {
         indexEntry.liveChildren.push(childItem),
         deferred.resolve();
       });
@@ -107,7 +108,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
   
   def.__unlinkChildFromPreviousParent = function(childItem)    {var self = this;
     var deferred = $q.defer();
-    var oldParentId = self._reverseIndex[childItem._id];
+    var oldParentId = self.__reverseIndex[childItem._id];
     if (oldParentId) {
       self.__removeChildFromParent(oldParentId, childItem).then( function() {
         deferred.resolve();
@@ -120,10 +121,10 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
   
   def.__removeChildFromParent = function(parentId, childItem)    {var self = this;
     var deferred = $q.defer();
-    var indexEntry = self._index[parentId];
+    var indexEntry = self.__index[parentId];
       util.removeFromArray(indexEntry.document.childrenIds, childItem._id);
-      delete self._reverseIndex[childItem._id];
-      self._db.put(indexEntry.document).then(function() {
+      delete self.__reverseIndex[childItem._id];
+      self.__db.put(indexEntry.document).then(function() {
         self.__ensureIndexEntryHasLiveChildren(indexEntry);
         util.removeFromArray(indexEntry.liveChildren, childItem);
         deferred.resolve();
@@ -136,7 +137,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
     if (!liveChildren) {
       var liveChildren = [];
       angular.forEach(indexEntry.document.childrenIds, function (childId) {
-        liveChildren.push(self.childCollection.get(childId));
+        liveChildren.push(self.__childCollection.__get__(childId));
       });
       indexEntry.liveChildren = liveChildren;
     }

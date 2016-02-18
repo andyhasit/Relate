@@ -4,7 +4,10 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
   var RelateModel = function(db)  {var self = this;
     self.__db = db;
     self.__collections = {};
-    self.__documentTypeLoaders = {};
+    self.__dbDocumentTypeLoaders = {};
+    self.__relationshipDefinitionFunctions = {
+      parentChild: self.__createParentChildRelationship,
+    }
   };
   var def = RelateModel.prototype;
     
@@ -21,7 +24,7 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
   
   def.printInfo = function ()  {var self = this;
     angular.forEach(self.__collections, function(collection) {
-      angular.forEach(collection.getAccessFunctions(), function(accessFunc) {
+      angular.forEach(collection.getAccessFunctionDefinitions(), function(accessFunc) {
         console.log('model.' + accessFunc.RelateModelFunctionName);
       });
     });
@@ -30,17 +33,25 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
   /************* MODEL DEFINITION FUNCTIONS *************/
   
   def.defineCollection = function(singleItemName, fieldNames, factory, options)  {var self = this;
-    /*
-    name must be singular. Let's do a check that "this" doesn't have this key.
-    also check typeIdentifier is unique.
-    */
     var collection = new Collection(self.__db, singleItemName, fieldNames, factory, options);
     self.__collections[collection.collectionName] = collection;
     self.__registerDocumentTypeLoader(collection);
     return collection;
   };
   
-  def.defineParentChildLink = function(parentCollectionName, childCollectionName, options)  {var self = this;
+  def.defineRelationship = function(options)  {var self = this;
+    var relationshipType = options.type
+    var fn = self.__relationshipDefinitionFunctions[relationshipType];
+    if (typeof fn === 'function') {
+      return fn.apply(self, [options]);
+    } else {
+      alert('fail');
+    }
+  };
+  
+  def.__createParentChildRelationship = function(options)  {var self = this;
+    var parentCollectionName = options.parent;
+    var childCollectionName = options.child;
     var parentCollection = self.__collections[parentCollectionName];
     var childCollection = self.__collections[childCollectionName];
     var relationship = new ParentChildRelationship(self.__db, parentCollection, childCollection, options);
@@ -49,6 +60,7 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
     self.__registerDocumentTypeLoader(relationship.childrenOfParentCollection);
     return relationship;
   };
+  
   
   /************* COLLECTION ACCESS FUNCTIONALITY ************
   
@@ -76,7 +88,7 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
   
   def.__createAccessFunctions = function ()  {var self = this;
     angular.forEach(self.__collections, function(collection) {
-      angular.forEach(collection.getAccessFunctions(), function(accessFunc) {
+      angular.forEach(collection.getAccessFunctionDefinitions(), function(accessFunc) {
         self[accessFunc.ModelFunctionName] = self.__wrapFunction(collection, accessFunc.collectionFunction);
       });
     });
@@ -100,14 +112,14 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
   /************* INITAL LOADING FUNCTIONALITY *************/
   
   def.__registerDocumentTypeLoader = function(collection)  {var self = this;
-    var typeIdentifier = collection.typeIdentifier;
-    if (typeIdentifier in self.__documentTypeLoaders) {
-      var claimedBy = self.__documentTypeLoaders[typeIdentifier];
-      throw 'Collection \"' + collection.collectionName + '\" tried to register for the typeIdentifier: \"' + typeIdentifier + 
+    var dbDocumentType = collection.dbDocumentType;
+    if (dbDocumentType in self.__dbDocumentTypeLoaders) {
+      var claimedBy = self.__dbDocumentTypeLoaders[dbDocumentType];
+      throw 'Collection \"' + collection.collectionName + '\" tried to register for the dbDocumentType: \"' + dbDocumentType + 
         '\" but it is already claimed by collection \"' + collection.collectionName + '\".' +
         '\nTypeIdentifiers are strings used to determine what collection each document should be loaded in';
     } else {
-      self.__documentTypeLoaders[typeIdentifier] = collection;
+      self.__dbDocumentTypeLoaders[dbDocumentType] = collection;
     }
   };
   
@@ -130,13 +142,13 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
   };
   
   def.__addDocumentToCollection = function (document)  {var self = this;
-    var documentType = document.type;
-    if (documentType) {
-      var collection = self.__documentTypeLoaders[documentType];
+    var dbDocumentType = document.type;
+    if (dbDocumentType) {
+      var collection = self.__dbDocumentTypeLoaders[dbDocumentType];
       if (collection) {
-        collection.loadDocument(document, documentType);
+        collection.loadDocumentFromDb(document, dbDocumentType);
       } else {
-        console.log('Could not load document \"' + document._id + '\" as type was not recognised (' + documentType + ')');
+        console.log('Could not load document \"' + document._id + '\" as type was not recognised (' + dbDocumentType + ')');
       }
     } else {
       //self.__db.remove(document);

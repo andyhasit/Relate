@@ -2,19 +2,19 @@
 angular.module('Relate').factory('ParentOfChildCollection', function(util, $q, BaseCollection) {
 
   var Class = function(db, parentCollection, childCollection, options)    {var self = this;
-    var options = options || {};
-    self._db = db;
+    self.__db = db;
     self.parentCollection = parentCollection;
     self.childCollection = childCollection;
     self._index = {};
+    var options = options || {};
     // e.g. lnk_child_tasks_of_project
-    self.typeIdentifier = options.parentOfChildTypeIdentifier ||
+    self.dbDocumentType = options.parentOfChildDocumentType ||
         'lnk_parent_' + parentCollection.itemName + '_of_' + childCollection.itemName;
   };
   util.inheritPrototype(Class, BaseCollection);
   var def = Class.prototype;
 
-  def.loadDocument = function(document)    {var self = this;
+  def.loadDocumentFromDb = function(document)    {var self = this;
     //TODO: check for duplicates here?
     var newIndexEntry = {document: document};
     self._index[document.childId] = newIndexEntry;
@@ -47,7 +47,7 @@ angular.module('Relate').factory('ParentOfChildCollection', function(util, $q, B
   
   def.__setChildParent = function(indexEntry, parentItem)    {var self = this;
     indexEntry.document.parentId = parentItemId;
-    self._db.put(indexEntry.document).then(function (result) {
+    self.__db.put(indexEntry.document).then(function (result) {
       indexEntry.document._rev = result.rev;
       indexEntry.liveObject = parentItem;
     });
@@ -58,7 +58,7 @@ angular.module('Relate').factory('ParentOfChildCollection', function(util, $q, B
     var id = childItem._id;
     var indexEntry = self._index[id];
     if (indexEntry) {
-      self._db.remove(indexEntry.document).then(function (result) {
+      self.__db.remove(indexEntry.document).then(function (result) {
         delete self._index[id];
         deferred.resolve();
       });
@@ -72,7 +72,7 @@ angular.module('Relate').factory('ParentOfChildCollection', function(util, $q, B
     var indexEntry = self._index[childItem._id];
     if (indexEntry && !indexEntry.pending) {
       if (angular.isUndefined(indexEntry.liveObject)) {
-        var parent = self.parentCollection.get(indexEntry.document.parentId);
+        var parent = self.parentCollection.__get__(indexEntry.document.parentId);
         if (angular.isUndefined(parent)) {
           parent = null;
         }

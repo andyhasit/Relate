@@ -54,12 +54,10 @@ angular.module('Relate').service('util', function($q) {
     }
   };
   
-  /*
-  for(var i = array.length - 1; i >= 0; i--) {
-    if(array[i] === number) {
-       array.splice(i, 1);
-    }
-  }
-  */
+  self.copyFields = function(source, target, fields)    {var self = this;
+    angular.forEach(fields, function(field) {
+      target[field] = source[field];
+    });
+  };
   
 });

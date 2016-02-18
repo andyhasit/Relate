@@ -1,102 +1,64 @@
 
 angular.module('Relate').factory('Collection', function(util, $q, BaseCollection) {
-  /*
-  All data is stored in collections. Add, delete and save are done via the collection.
-  */
-  var Collection = function(db, singleItemName, fieldNames, factory, options)    {var self = this;
+  
+  var Collection = function(db, singleItemName, fieldNames, factoryFunction, options)    {var self = this;
     var options = options || {};
-    self._db = db;
-    self._factory = factory;
-    self._index = {};
-    self.__fieldNames = fieldNames; //TODO: maybe copy for safety?
-    //Can be changed in options. Implement later.
     self.itemName = singleItemName;
     self.collectionName = options.collectionName || singleItemName; //This is how a relationship references collection
-    self.typeIdentifier = options.typeIdentifier || singleItemName;
-    self.relationships = [];
+    self.dbDocumentType = options.dbDocumentType || singleItemName;
+    self.__db = db;
+    self.__factoryFunction = factoryFunction;
+    self.__items = {};
+    self.__relationships = [];
+    self.__fieldNames = fieldNames.slice();
+    self.__fullFieldNames = fieldNames.slice();
+    self.__fullFieldNames.push('_id');
+    self.__fullFieldNames.push('_rev');
   };
   util.inheritPrototype(Collection, BaseCollection);
   var def = Collection.prototype;
 
-  def.getAccessFunctions = function()    {var self = this;
+  def.registerRelationship = function(relationship)    {var self = this;
+    self.__relationships.push(relationship);
+  };
+
+  def.loadDocumentFromDb = function(doc)    {var self = this;
+    var item = new self.__factoryFunction();
+    util.copyFields(doc, item, self.__fullFieldNames);
+    self.__items[doc._id] = item;
+    return item;
+  };
+  
+  def.getAccessFunctionDefinitions = function()    {var self = this;
     var singleItemActions = ['new', 'get', 'save', 'delete'];
     var multipleItemActions = ['find'];
     var accessFunctions = [];
     var itemName = util.capitalizeFirstLetter(self.itemName);
-
+    function getOwnFunction(action) {
+      return self['__' + action + '__'];
+    }
     angular.forEach(singleItemActions, function(action) {
-      accessFunctions.push(util.createAccessFunctionDefinition(action + itemName, self[action]));
+      accessFunctions.push(util.createAccessFunctionDefinition(action + itemName, getOwnFunction(action)));
     });
     angular.forEach(multipleItemActions, function(action) {
-      accessFunctions.push(util.createAccessFunctionDefinition(action + itemName + 's', self[action]));
+      accessFunctions.push(util.createAccessFunctionDefinition(action + itemName + 's', getOwnFunction(action)));
     });
     return accessFunctions;
   };
-
-  def._registerRelationship = function(relationship)    {var self = this;
-    //Registers a relationship -- internal use.
-    self.relationships.push(relationship);
+  
+  def.__get__ = function(id)    {var self = this;
+    return self.__items[id];
   };
 
-  def.loadDocument = function(doc)    {var self = this;
-    //Registers a doc in collection -- internal use.
-    var item = new self._factory();
-    self.__copyFieldValues(doc, item);
-    item._id = doc._id;
-    item._rev = doc._rev;
-    self._index[doc._id] = item;
-    return item;
-  };
-
-  def.__copyFieldValues = function(source, target)    {var self = this;
-    angular.forEach(self.__fieldNames, function(field) {
-      target[field] = source[field];
-    });
-  };
-
-  def.new = function(data)    {var self = this;
-    //returns a promise, which goes via loadDocument()
-    return self.__createDocument(data);
-  };
-
-  def.save = function(item)    {var self = this;
-    var deferred = $q.defer();
-    var doc = {};
-    self.__copyFieldValues(item, doc);
-    self._db.put(doc).then(function (result) {
-      item._rev = result.rev;
-      deferred.resolve(item._rev);
-    });
-    return deferred.promise;
-  };
-
-  def.delete = function(item)    {var self = this;
-    var deferred = $q.defer();
-    var childDeletions = [];
-    /* Note that calls to relationship._removeItem must not depend on a promise themselves
-    */
-    angular.forEach(self.relationships, function(relationship) {
-      childDeletions.push(relationship._removeItem(item));
-    });
-    $q.all(childDeletions).then(function() {
-      self._db.remove(item).then(function (result) {
-        delete self._index[item._id];
-        deferred.resolve();
-      });
-    });
-    return deferred.promise;
-  };
-
-  def.get = function(id)    {var self = this;
-    return self._index[id];
-  };
-
-  def.find = function(query)    {var self = this;
+  def.__find__ = function(query)    {var self = this;
     //query can be an object like {name: 'do it'} or empty, or function
     var test;
-    if (typeof query == 'function') {
+    if (typeof query === 'undefined') {
+      test = function(x) {return true};
+    }
+    else if (typeof query === 'function') {
       test = query;
-    } else if (typeof query == 'object') {
+    } else if (typeof query === 'object') {
       test = function(item) {
         for (prop in query) {
           if (item[prop] !== query[prop]) {
@@ -106,9 +68,41 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
         return true;
       }
     } else {
-      throw 'Collection.find expects a function or object';
+      throw 'Invalid argument for "find", must be an object or a function.';
     }
-    return util.filterIndex(self._index, test);
+    return util.filterIndex(self.__items, test);
+  };
+  
+  def.__new__ = function(data)    {var self = this;
+    return self.__createDocumentInDb(data);
+  };
+
+  def.__save__ = function(item)    {var self = this;
+    var deferred = $q.defer();
+    var doc = {};
+    util.copyFields(item, doc, self.__fullFieldNames);
+    self.__db.put(doc).then(function (result) {
+      item._rev = result.rev;
+      deferred.resolve(item._rev);
+    });
+    return deferred.promise;
+  };
+
+  def.__delete__ = function(item)    {var self = this;
+    var deferred = $q.defer();
+    var childDeletions = [];
+    /* Note that calls to relationship._removeItem must not depend on a promise themselves
+    */
+    angular.forEach(self.__relationships, function(relationship) {
+      childDeletions.push(relationship._removeItem(item));
+    });
+    $q.all(childDeletions).then(function() {
+      self.__db.remove(item).then(function (result) {
+        delete self.__items[item._id];
+        deferred.resolve();
+      });
+    });
+    return deferred.promise;
   };
 
   return Collection;
