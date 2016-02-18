@@ -3,7 +3,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   /*
   All data is stored in collections. Add, delete and save are done via the collection.
   */
-  var Class = function(db, name, fields, factory, options)    {var self = this;
+  var Collection = function(db, name, fields, factory, options)    {var self = this;
     self._db = db;
     self._factory = factory;
     self._index = {};
@@ -14,15 +14,15 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     self.typeIdentifier = name;
     self.relationships = [];
   };
-  util.inheritPrototype(Class, BaseCollection);
-  var def = Class.prototype;
-  
+  util.inheritPrototype(Collection, BaseCollection);
+  var def = Collection.prototype;
+
   def.getAccessFunctions = function()    {var self = this;
     var singleItemActions = ['new', 'get', 'save', 'delete'];
     var multipleItemActions = ['find'];
     var accessFunctions = [];
     var itemName = util.capitalizeFirstLetter(self.itemName);
-    
+
     angular.forEach(singleItemActions, function(action) {
       accessFunctions.push(util.createAccessFunctionDefinition(action + itemName, self[action]));
     });
@@ -31,12 +31,12 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     });
     return accessFunctions;
   };
-    
+
   def._registerRelationship = function(relationship)    {var self = this;
     //Registers a relationship -- internal use.
     self.relationships.push(relationship);
   };
-  
+
   def.loadDocument = function(document)    {var self = this;
     //Registers a document in collection -- internal use.
     var item = new self._factory();
@@ -46,18 +46,18 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     self._index[document._id] = item;
     return item;
   };
-  
+
   def.__copyFieldValues = function(source, target)    {var self = this;
     angular.forEach(self.__fields, function(field) {
       target[field] = source[field];
     });
-  }
-  
+  };
+
   def.new = function(data)    {var self = this;
     //returns a promise, which goes via loadDocument()
     return self.__createDocument(data);
   };
-  
+
   def.save = function(item)    {var self = this;
     var deferred = $q.defer();
     var document = {};
@@ -68,11 +68,11 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     });
     return deferred.promise;
   };
-  
+
   def.delete = function(item)    {var self = this;
     var deferred = $q.defer();
     var childDeletions = [];
-    /* Note that calls to relationship._removeItem must not depend on a promise themselves 
+    /* Note that calls to relationship._removeItem must not depend on a promise themselves
     */
     angular.forEach(self.relationships, function(relationship) {
       childDeletions.push(relationship._removeItem(item));
@@ -85,11 +85,11 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     });
     return deferred.promise;
   };
-  
+
   def.get = function(id)    {var self = this;
     return self._index[id];
   };
-  
+
   def.find = function(query)    {var self = this;
     //query can be an object like {name: 'do it'} or empty, or function
     var test;
@@ -109,6 +109,6 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     }
     return util.filterIndex(self._index, test);
   };
-  
-  return Class;
+
+  return Collection;
 });

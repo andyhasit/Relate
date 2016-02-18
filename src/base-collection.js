@@ -39,7 +39,7 @@ angular.module('Relate').factory('BaseCollection', function($q) {
   };
   
   BaseCollection.prototype.__createDocument = function(document)    {var self = this;
-    //Post then fetch a new document.
+    //Creates the new document in the database and loads it.
     var defer = $q.defer();
     document.type = self.typeIdentifier;
     self._db.post(document).then( function (result) {

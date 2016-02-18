@@ -15,6 +15,16 @@ angular.module('Relate').service('util', function($q) {
     }
   };
     
+  self.arrayContains = function(array, item) {
+    var l = array.length
+    for(var i=0; i <= l; i++) {
+      if (item == array[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
   self.removeFromArray = function(array, item) {
     //will be unique in list.
     var index = array.indexOf(item);

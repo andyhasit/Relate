@@ -263,3 +263,14 @@ This is not strictly speaking OOP inheritance. We are merely importing functions
 Try to keep the functions small, sourcing out as much as possible to other functions.
 
 Combining this with points 5 and 6 will allow you to write more concise and understandable code in the more public facing functions and make the knitty gritty parts reusable to other factories, controllers and services.
+
+#Rules
+
+  - Query (find and get) return immediately.
+  - Operations (new, save, set, delete) return promises, and the collection functions must ensure that all indexes are updated before the promise resolves.
+  - The Model ensures operations on collections (including relationships) are queued, so one finishes before the other does.
+This means that internally, the index is always up to date.
+  - Relationship operations are responsible for chaining operations to other collections or relationship to ensure constistency.
+  - This means that so long as the last operation has resolved.
+
+

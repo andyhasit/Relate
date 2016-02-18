@@ -123,15 +123,20 @@ fdescribe('Model', function() {
     expect(model.getProjectTasks(project1)).toEqual([task2, task1]);
   });
   
-  xit('can link and unlink items at will', function() {
+  it('can link and unlink items at will', function() {
     task1 = model.getTask('t001');
     task2 = model.getTask('t002');
     project1 = model.getProject('p001');
-    expect(model.getTaskProject(task2)).toEqual(project1);
-    expect(model.getTaskProject(task1)).toEqual(null);
-    model.setTaskProject(task1, project1);
+    expect(model.getProjectTasks(project1)).toEqual([task2]);
+    model.newProject({name: 'newProj'}).then(function(proj) {
+      newProject = proj;
+    });
     $rootScope.$apply();
-    expect(model.getTaskProject(task1)).toEqual(project1);
+    expect(newProject.name).toEqual('newProj');
+    model.setTaskProject(task2, newProject);
+    $rootScope.$apply();
+    expect(model.getProjectTasks(project1)).toEqual([]);
+    expect(model.getTaskProject(task2)).toEqual(newProject);
   });
   
 });

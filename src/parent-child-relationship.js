@@ -72,15 +72,15 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ParentO
       //Note that _parentDeleteInProgress will be set to false before promises are all resolved (non critical)
       self._parentDeleteInProgress.set(item, false);
       $q.all(childDeletions).then(function() {
-        self.childrenOfParentCollection.removeParent(item);
+        self.childrenOfParentCollection.onParentDeleted(item);
         deferred.resolve();
       });
     } else {
       var parentItem = self.getParent(item);
       var childDeletions = [];
-      childDeletions.push(self.parentOfChildCollection.removeChild(item));
+      childDeletions.push(self.parentOfChildCollection.onChildDeleted(item));
       if (parentItem && !self._parentDeleteInProgress.get(parentItem)) {
-        childDeletions.push(self.childrenOfParentCollection.removeChild(item));
+        childDeletions.push(self.childrenOfParentCollection.onChildDeleted(item));
       }
       $q.all(childDeletions).then(function() {
         deferred.resolve();

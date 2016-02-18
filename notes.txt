@@ -69,7 +69,10 @@ New way 30/01:
 model queues requests made to it, meaning collection calls have guarantees.
 I can make collection calls from collections, but in that case I need to chain my promises.
 Next steps:
-    model add and save items
+    test save items
+    test delete
+    test that sequential operations ar not a problem
+    Change ParentOfChildCollection to promises
     link - create setChildParent
     edit or access a deleted item?
     

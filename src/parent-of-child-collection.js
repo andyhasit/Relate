@@ -53,7 +53,7 @@ angular.module('Relate').factory('ParentOfChildCollection', function(util, $q, B
     });
   };
   
-  def.removeChild = function(childItem)    {var self = this;
+  def.onChildDeleted = function(childItem)    {var self = this;
     var deferred = $q.defer();
     var id = childItem._id;
     var indexEntry = self._index[id];
