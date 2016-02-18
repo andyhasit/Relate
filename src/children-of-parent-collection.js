@@ -1,5 +1,5 @@
 
-angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q, ChildrenOfParentCollectionFunctions) {
+angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q, BaseCollection) {
 
   var ChildrenOfParentCollection = function(db, parentCollection, childCollection, $window, options)    {var self = this;
     var options = options || {};
@@ -11,7 +11,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
     self.typeIdentifier = options.childrenOfParentTypeIdentifier ||
         'lnk_child_' + childCollection.itemName + 's_of_' + parentCollection.itemName; // e.g. lnk_child_tasks_of_project
   };
-  util.inheritPrototype(ChildrenOfParentCollection, ChildrenOfParentCollectionFunctions);
+  util.inheritPrototype(ChildrenOfParentCollection, BaseCollection);
   var def = ChildrenOfParentCollection.prototype;
 
   def.loadDocument = function(document)     {var self = this;
@@ -31,19 +31,6 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
     } else {
       return [];
     }
-  };
-
-  def.__unlinkChildFromPreviousParent = function(childItem)    {var self = this;
-    var deferred = $q.defer();
-    var oldParentId = self._reverseIndex[childItem._id];
-    if (oldParentId) {
-      self.__removeChildFromParent(oldParentId, childItem).then( function() {
-        deferred.resolve();
-      });
-    } else {
-      deferred.resolve();
-    }
-    return deferred.promise;
   };
 
   def.link = function(parentItem, childItem)    {var self = this;
@@ -103,16 +90,6 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
     return self.__unlinkChildFromPreviousParent(childItem);
   };
 
-  return ChildrenOfParentCollection;
-});
-
-
-angular.module('Relate').factory('ChildrenOfParentCollectionFunctions', function(util, $q, BaseCollection) {
-
-  var ChildrenOfParentCollectionFunctions = function(){};
-  util.inheritPrototype(ChildrenOfParentCollectionFunctions, BaseCollection);
-  var def = ChildrenOfParentCollectionFunctions.prototype;
-
   def.__addChildToParent = function(indexEntry, childItem)    {var self = this;
     var deferred = $q.defer();
     self.__ensureIndexEntryHasLiveChildren(indexEntry);
@@ -127,7 +104,20 @@ angular.module('Relate').factory('ChildrenOfParentCollectionFunctions', function
     }
     return deferred.promise;
   };
-
+  
+  def.__unlinkChildFromPreviousParent = function(childItem)    {var self = this;
+    var deferred = $q.defer();
+    var oldParentId = self._reverseIndex[childItem._id];
+    if (oldParentId) {
+      self.__removeChildFromParent(oldParentId, childItem).then( function() {
+        deferred.resolve();
+      });
+    } else {
+      deferred.resolve();
+    }
+    return deferred.promise;
+  };
+  
   def.__removeChildFromParent = function(parentId, childItem)    {var self = this;
     var deferred = $q.defer();
     var indexEntry = self._index[parentId];

@@ -1,78 +1,80 @@
 
-angular.module('Relate').factory('Model', function($q, ModelPrivateFunctions, Collection, ParentChildRelationship) {
+angular.module('Relate').factory('RelateModel', function($q, Collection, ParentChildRelationship) {
   
-  var Model = function(db)    {var self = this;
+  var RelateModel = function(db)  {var self = this;
     self.__db = db;
     self.__collections = {};
-    self.__typeIdentifiers = {};
+    self.__documentTypeLoaders = {};
   };
-  Model.prototype = new ModelPrivateFunctions();
+  var def = RelateModel.prototype;
+    
+  var __dataReady;
+  def.onDataReady = function ()  {var self = this;
+    if (__dataReady === undefined) {
+      __dataReady = $q.defer();
+      self.__initializeModel().then( function () {
+        __dataReady.resolve();
+      });
+    }
+    return __dataReady.promise;
+  };
   
-  Model.prototype.addCollection = function(name, fields, factory, options)    {var self = this;
+  def.printInfo = function ()  {var self = this;
+    angular.forEach(self.__collections, function(collection) {
+      angular.forEach(collection.getAccessFunctions(), function(accessFunc) {
+        console.log('model.' + accessFunc.RelateModelFunctionName);
+      });
+    });
+  };
+  
+  /************* MODEL DEFINITION FUNCTIONS *************/
+  
+  def.defineCollection = function(singleItemName, fieldNames, factory, options)  {var self = this;
     /*
     name must be singular. Let's do a check that "this" doesn't have this key.
     also check typeIdentifier is unique.
     */
-    var collection = new Collection(self.__db, name, fields, factory, options);
-    self.__collections[name] = collection;
-    self.__registerTypeIdentifier(collection);
+    var collection = new Collection(self.__db, singleItemName, fieldNames, factory, options);
+    self.__collections[collection.collectionName] = collection;
+    self.__registerDocumentTypeLoader(collection);
     return collection;
   };
   
-  Model.prototype.addParentChildLink = function(parentCollectionName, childCollectionName, options)    {var self = this;
+  def.defineParentChildLink = function(parentCollectionName, childCollectionName, options)  {var self = this;
     var parentCollection = self.__collections[parentCollectionName];
     var childCollection = self.__collections[childCollectionName];
     var relationship = new ParentChildRelationship(self.__db, parentCollection, childCollection, options);
-    self.__collections[name] = relationship;
-    self.__registerTypeIdentifier(relationship.parentOfChildCollection);
-    self.__registerTypeIdentifier(relationship.childrenOfParentCollection);
+    self.__collections[relationship.collectionName] = relationship;
+    self.__registerDocumentTypeLoader(relationship.parentOfChildCollection);
+    self.__registerDocumentTypeLoader(relationship.childrenOfParentCollection);
     return relationship;
   };
   
-  Model.prototype.ready = function () { var self = this;
-    //Returns a promise that ensures data is only fetched once.
-    var defer = $q.defer();
-    if (self.__isAllLoaded) {
-      defer.resolve();
-    } else {
-      self.__loadAndLinkEveryting().then( function () {
-        self.__isAllLoaded = true;
-        defer.resolve();
-      });
-    }
-    return defer.promise;
-  };
+  /************* COLLECTION ACCESS FUNCTIONALITY ************
   
-  Model.prototype.printInfo = function ()    {var self = this;
-    angular.forEach(self.__collections, function(collection) {
-      angular.forEach(collection.getAccessFunctions(), function(accessFunc) {
-        console.log('model.' + accessFunc.ModelFunctionName);
-      });
+    __createAccessFunctions() creates methods like:
+  
+      model.newTask({})
+      model.getProjectTasks(project)
+  
+    Query functions (getX, findX) return directly. Data changing functions (all other prefixed) return promises.
+    
+    Query data may be dirty while a promise is waiting to complete, so you need to do this:
+    
+    model.newTask({}).then(function(){
+      angular.copy($scope.tasks, model.getProjectTasks($scope.project));
     });
-  };
-   return Model;
-});
+    
+    Data changing functions are queued internally, so you can do this.
+    model.newTask({});
+    model.newTask({});
+    model.newTask({}).then(function(){
+      angular.copy($scope.tasks, model.getProjectTasks($scope.project));
+    });
+    
+  */
   
-
-
-angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
-  
-  var ModelPrivateFunctions = function() {
-  };
-
-  ModelPrivateFunctions.prototype.__registerTypeIdentifier = function(collection)    {var self = this;
-    var typeIdentifier = collection.typeIdentifier;
-    if (typeIdentifier in self.__typeIdentifiers) {
-      var claimedBy = self.__typeIdentifiers[typeIdentifier];
-      throw 'Collection \"' + collection.collectionName + '\" tried to register for the typeIdentifier: \"' + typeIdentifier + 
-        '\" but it is already claimed by collection \"' + collection.collectionName + '\".' +
-        '\nTypeIdentifiers are strings used to determine what collection each document should be loaded in';
-    } else {
-      self.__typeIdentifiers[typeIdentifier] = collection;
-    }
-  };
-  
-  ModelPrivateFunctions.prototype.__createAccessFunctions = function ()    {var self = this;
+  def.__createAccessFunctions = function ()  {var self = this;
     angular.forEach(self.__collections, function(collection) {
       angular.forEach(collection.getAccessFunctions(), function(accessFunc) {
         self[accessFunc.ModelFunctionName] = self.__wrapFunction(collection, accessFunc.collectionFunction);
@@ -80,7 +82,7 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
     });
   };
   
-  ModelPrivateFunctions.prototype.__wrapFunction = function (collection, collectionFunction)    {var self = this;
+  def.__wrapFunction = function (collection, collectionFunction)  {var self = this;
     return function() {
       //chain this call, should fail for now.
       //var deferred = self.__queueCall(collection[baseFunctionName], collection, [collection, data, options]);
@@ -88,24 +90,36 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
     }
   };
   
-  ModelPrivateFunctions.prototype.__queueCall = function (func, target, args)    {var self = this;
+  def.__queueCall = function (func, target, args)  {var self = this;
     //reuse from other factory, but prevent it from being called yet.
       //chain this call
       var deferred = func.apply(target, args);
     
   };
 
-  ModelPrivateFunctions.prototype.__loadAndLinkEveryting = function ()    {var self = this;
-    // Does the actual loading of data.
+  /************* INITAL LOADING FUNCTIONALITY *************/
+  
+  def.__registerDocumentTypeLoader = function(collection)  {var self = this;
+    var typeIdentifier = collection.typeIdentifier;
+    if (typeIdentifier in self.__documentTypeLoaders) {
+      var claimedBy = self.__documentTypeLoaders[typeIdentifier];
+      throw 'Collection \"' + collection.collectionName + '\" tried to register for the typeIdentifier: \"' + typeIdentifier + 
+        '\" but it is already claimed by collection \"' + collection.collectionName + '\".' +
+        '\nTypeIdentifiers are strings used to determine what collection each document should be loaded in';
+    } else {
+      self.__documentTypeLoaders[typeIdentifier] = collection;
+    }
+  };
+  
+  def.__initializeModel = function ()  {var self = this;
     var defer = $q.defer();
-    self.__db.allDocs({
+    var allDocsDefer = self.__db.allDocs({
       include_docs: true,
       attachments: false
-    }).then(function (result) {
-      //Register each doc to its collection
+    });
+    allDocsDefer.then(function (result) {
       angular.forEach(result.rows, function(row){
-        //delete all:  self.__db.remove(row.doc);
-        self.__loadDocumentToCollection(row.doc);
+        self.__addDocumentToCollection(row.doc);
       });
       self.__createAccessFunctions();
       defer.resolve();
@@ -115,15 +129,14 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
     return defer.promise;
   };
   
-  ModelPrivateFunctions.prototype.__loadDocumentToCollection = function (document)    {var self = this;
-    //Registers a document loaded from the db to the correct collection
-    var typeIdentifier = document.type;
-    if (typeIdentifier) {
-      var collection = self.__typeIdentifiers[typeIdentifier];
+  def.__addDocumentToCollection = function (document)  {var self = this;
+    var documentType = document.type;
+    if (documentType) {
+      var collection = self.__documentTypeLoaders[documentType];
       if (collection) {
-        collection.loadDocument(document, typeIdentifier); //TODO: is typeIdentifier needed?
+        collection.loadDocument(document, documentType);
       } else {
-        console.log('Could not load document \"' + document._id + '\" as type was not recognised (' + typeIdentifier + ')');
+        console.log('Could not load document \"' + document._id + '\" as type was not recognised (' + documentType + ')');
       }
     } else {
       //self.__db.remove(document);
@@ -131,6 +144,6 @@ angular.module('Relate').factory('ModelPrivateFunctions', function($q) {
     }
   };
   
-  return ModelPrivateFunctions;
+  return RelateModel;
 });
 

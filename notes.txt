@@ -44,7 +44,8 @@ later:
     what about enforcing parameters for new objects?
     immutable data/ensure there ia a permanent array for every relationship?
     get delete registering
-    Can certain collections be lazy loaded? Like notes? In that case may we need a one-to-one relationship? And if this is the case we'd load by query, not allDocs. Or use attachments for that purpose.
+    Can certain collections be lazy loaded? Like notes? In that case may we need a one-to-one relationship? And if this is the case we'd load by query, not allDocs. 
+        Or use attachments for that purpose?
 
 
 Trouble with async operation....

@@ -1,3 +1,3 @@
 "use strict";
 
-angular.module('Relate', []); //, ['pouchdb']);
+angular.module('Relate', []);

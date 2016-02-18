@@ -3,15 +3,16 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   /*
   All data is stored in collections. Add, delete and save are done via the collection.
   */
-  var Collection = function(db, name, fields, factory, options)    {var self = this;
+  var Collection = function(db, singleItemName, fieldNames, factory, options)    {var self = this;
+    var options = options || {};
     self._db = db;
     self._factory = factory;
     self._index = {};
-    self.__fields = fields; //TODO: maybe copy for safety?
+    self.__fieldNames = fieldNames; //TODO: maybe copy for safety?
     //Can be changed in options. Implement later.
-    self.itemName = name;
-    self.collectionName = name + 's';
-    self.typeIdentifier = name;
+    self.itemName = singleItemName;
+    self.collectionName = options.collectionName || singleItemName; //This is how a relationship references collection
+    self.typeIdentifier = options.typeIdentifier || singleItemName;
     self.relationships = [];
   };
   util.inheritPrototype(Collection, BaseCollection);
@@ -37,18 +38,18 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     self.relationships.push(relationship);
   };
 
-  def.loadDocument = function(document)    {var self = this;
-    //Registers a document in collection -- internal use.
+  def.loadDocument = function(doc)    {var self = this;
+    //Registers a doc in collection -- internal use.
     var item = new self._factory();
-    self.__copyFieldValues(document, item);
-    item._id = document._id;
-    item._rev = document._rev;
-    self._index[document._id] = item;
+    self.__copyFieldValues(doc, item);
+    item._id = doc._id;
+    item._rev = doc._rev;
+    self._index[doc._id] = item;
     return item;
   };
 
   def.__copyFieldValues = function(source, target)    {var self = this;
-    angular.forEach(self.__fields, function(field) {
+    angular.forEach(self.__fieldNames, function(field) {
       target[field] = source[field];
     });
   };
@@ -60,9 +61,9 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
 
   def.save = function(item)    {var self = this;
     var deferred = $q.defer();
-    var document = {};
-    self.__copyFieldValues(item, document);
-    self._db.put(document).then(function (result) {
+    var doc = {};
+    self.__copyFieldValues(item, doc);
+    self._db.put(doc).then(function (result) {
       item._rev = result.rev;
       deferred.resolve(item._rev);
     });

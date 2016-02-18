@@ -1,16 +1,16 @@
 
-fdescribe('Model', function() {
+describe('Model', function() {
   
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
   
-  var db, model, Collection, $rootScope, projectCollection, taskCollection, collection, task1,
+  var db, model, $rootScope, projectCollection, taskCollection, task1,
     task2, task3, task4, project1, project2;
   
-  beforeEach(inject(function(_Collection_, QueuedResponseDb, _Model_, _$rootScope_, _db_, $q) {
+  beforeEach(inject(function(_Collection_, QueuedResponseDb, _RelateModel_, _$rootScope_, _db_, $q) {
     $rootScope = _$rootScope_;
     db = _db_;
-    model = new _Model_(db);
+    model = new _RelateModel_(db);
     //TODO: change this to fakeDb set, and add getLastX
     spyOn(db, 'allDocs').and.returnValue($q.when({rows:[
       {
@@ -40,11 +40,17 @@ fdescribe('Model', function() {
       }
       
     ]}));
-    model.addCollection('project', ['name'], DummyFactory);
-    model.addCollection('task', ['name'], DummyFactory);
-    model.addParentChildLink('project', 'task');
-    model.ready();
+    model.defineCollection('project', ['name'], DummyFactory);
+    model.defineCollection('task', ['name'], DummyFactory);
+    model.defineParentChildLink('project', 'task');
+    model.onDataReady();
     $rootScope.$apply();
+    
+    task1 = model.getTask('t001');
+    task2 = model.getTask('t002');
+    project1 = model.getProject('p001');
+    project2 = model.getProject('p002');
+    
   }));
   
   it('creates accessor functions', function() {
@@ -57,49 +63,37 @@ fdescribe('Model', function() {
   });
    
   it('getItem works on fresh load', function() {
-    task2 = model.getTask('t002');
     expect(typeof task2).toEqual('object');
     expect(task2._id).toEqual('t002');
   });
   
   it('loaded items have expected properties', function() {
-    task2 = model.getTask('t002');
-    project1 = model.getProject('p001');
     expect(task2._id).toEqual('t002');
     expect(task2._rev).toEqual('1-t002');
     expect(task2.name).toEqual('task2');
   });
   
   it('getParent works on fresh load', function() {
-    task2 = model.getTask('t002');
-    project1 = model.getProject('p001');
     expect(model.getTaskProject(task2)).toEqual(project1);
   });
   
   it('getChildren works on fresh load', function() {
-    task2 = model.getTask('t002');
-    project1 = model.getProject('p001');
     expect(model.getProjectTasks(project1)).toEqual([task2]);
   });
   
   /*save delete new */
   
   it('find works with object as query', function() {
-    task1 = model.getTask('t001');
     var results = model.findTasks({name: 'task1'});
     expect(results).toEqual([task1]);
   });
   
   it('find with empty object as query returns all objects', function() {
-    task1 = model.getTask('t001');
     var results = model.findTasks({});
     expect(results).toEqual([task1, task2]);
   });
   
   it('can create items', function() {
-    task1 = model.getTask('t001');
-    task2 = model.getTask('t002');
-    project1 = model.getProject('p001');
     var task3;
     model.newTask({name: 'unicycle'}).then(function() {
       task3 = model.findTasks({name: 'unicycle'})[0];
@@ -110,9 +104,6 @@ fdescribe('Model', function() {
   });
   
   it('can link items', function() {
-    task1 = model.getTask('t001');
-    task2 = model.getTask('t002');
-    project1 = model.getProject('p001');
     expect(model.getTaskProject(task2)).toEqual(project1);
     expect(model.getTaskProject(task1)).toEqual(null);
     expect(model.getProjectTasks(project1)).toEqual([task2]);
@@ -124,9 +115,6 @@ fdescribe('Model', function() {
   });
   
   it('can link and unlink items at will', function() {
-    task1 = model.getTask('t001');
-    task2 = model.getTask('t002');
-    project1 = model.getProject('p001');
     expect(model.getProjectTasks(project1)).toEqual([task2]);
     model.newProject({name: 'newProj'}).then(function(proj) {
       newProject = proj;
