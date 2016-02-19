@@ -54,7 +54,7 @@ angular.module('Relate').factory('ItemChildrenRegister', function(util, $q, Base
           childrenIds: [childItem._id]
         });
       }
-      innerPromise.then( function () {
+      innerPromise.then(function () {
         deferred.resolve();
       });
     });

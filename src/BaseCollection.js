@@ -8,8 +8,9 @@ angular.module('Relate').factory('BaseCollection', function($q) {
     self.__index = null;
     self.__db = null;
   };
+  var def = BaseCollection.prototype;
   
-  BaseCollection.prototype.__postAndLoad = function(document)    {var self = this;
+  def.__postAndLoad = function(document)    {var self = this;
     var defered = $q.defer();
     document.type = self.typeIdentifier;
     self.__db.post(document).then( function (result) {

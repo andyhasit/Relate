@@ -7,39 +7,26 @@ describe('Model', function() {
   var db, model, $rootScope, projectCollection, taskCollection, task1,
     task2, task3, task4, project1, project2;
   
-  beforeEach(inject(function(_Collection_, QueuedResponseDb, _RelateModel_, _$rootScope_, _db_, $q) {
+  beforeEach(inject(function( _RelateModel_, _$rootScope_, FakeDb, $q) {
     $rootScope = _$rootScope_;
-    db = _db_;
+    var db = new FakeDb();
+    
+    db.setData('task', ['name'], [
+      ['task1'],
+      ['task2'],
+    ]);
+    db.setData('project', ['project'], [
+      ['project1'],
+      ['project2'],
+    ]);
+    db.setData('lnk_child_tasks_of_project', ['parentId', 'childrenIds'], [
+      ['project_1', ['task_2']]
+    ]);
+    db.setData('lnk_parent_project_of_task', ['parentId', 'childId'], [
+      ['project_1', 'task_2']
+    ]);
+    
     model = new _RelateModel_(db);
-    //TODO: change this to fakeDb set, and add getLastX
-    spyOn(db, 'allDocs').and.returnValue($q.when({rows:[
-      {
-        id: 'p001',
-        doc: {_id:'p001', _rev: '1-p001', type: 'project', name: 'project1'}
-      },
-      {
-        id: 'p002',
-        doc: {_id:'p002', _rev: '1-p002', type: 'project', name: 'project2'}
-      },
-      {
-        id: 't001',
-        doc: {_id:'t001', _rev: '1-t001', type: 'task', name: 'task1'}
-      },
-      {
-        id: 't002',
-        doc: {_id:'t002', _rev: '1-t002', type: 'task', name: 'task2'}
-      },
-      {
-        id: 'lnk001',
-        doc: {_id:'lnk001', _rev: '1-lnk001', type: 'lnk_child_tasks_of_project', parentId: 'p001', childrenIds: ['t002']}
-      }
-      ,
-      {
-        id: 'lnk002',
-        doc: {_id:'lnk002', _rev: '1-lnk002', type: 'lnk_parent_project_of_task', parentId: 'p001', childId: 't002'}
-      }
-      
-    ]}));
     model.defineCollection('project', ['name'], DummyFactory);
     model.defineCollection('task', ['name'], DummyFactory);
     model.defineRelationship({
@@ -47,13 +34,14 @@ describe('Model', function() {
       parent:'project', 
       child:'task'
     });
+    
     model.onDataReady();
     $rootScope.$apply();
     
-    task1 = model.getTask('t001');
-    task2 = model.getTask('t002');
-    project1 = model.getProject('p001');
-    project2 = model.getProject('p002');
+    task1 = model.getTask('task_1');
+    task2 = model.getTask('task_2');
+    project1 = model.getProject('project_1');
+    project2 = model.getProject('project_2');
     
   }));
   
@@ -68,12 +56,12 @@ describe('Model', function() {
    
   it('getItem works on fresh load', function() {
     expect(typeof task2).toEqual('object');
-    expect(task2._id).toEqual('t002');
+    expect(task2._id).toEqual('task_2');
   });
   
   it('loaded items have expected properties', function() {
-    expect(task2._id).toEqual('t002');
-    expect(task2._rev).toEqual('1-t002');
+    expect(task2._id).toEqual('task_2');
+    expect(task2._rev).toEqual('1-task_2');
     expect(task2.name).toEqual('task2');
   });
   

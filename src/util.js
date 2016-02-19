@@ -7,11 +7,12 @@ angular.module('Relate').service('util', function($q) {
   self.capitalizeFirstLetter = function(string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
   };
-
-  self.createAccessFunctionDefinition = function(name, fn) {
+  
+  self.createAccessFunctionDefinition = function(name, fn, queuedPromise) {
     return {
       ModelFunctionName: name,
-      collectionFunction: fn
+      collectionFunction: fn,
+      queuedPromise: queuedPromise
     }
   };
     
@@ -23,7 +24,7 @@ angular.module('Relate').service('util', function($q) {
       }
     }
     return false;
-  }
+  };
   
   self.removeFromArray = function(array, item) {
     //will be unique in list.
@@ -42,7 +43,7 @@ angular.module('Relate').service('util', function($q) {
       }
     });
     return filteredItems;
-  }
+  };
   
   self.inheritPrototype = function(Child, Parent) {
     var childProto = Child.prototype;

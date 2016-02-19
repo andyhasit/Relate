@@ -30,22 +30,6 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   };
   
   def.getAccessFunctionDefinitions = function()    {var self = this;
-    /*
-    var singleItemActions = ['new', 'get', 'save', 'delete'];
-    var multipleItemActions = ['find'];
-    var accessFunctions = [];
-    var itemName = util.capitalizeFirstLetter(self.itemName);
-    function getOwnFunction(action) {
-      return self['__' + action + '__'];
-    }
-    angular.forEach(singleItemActions, function(action) {
-      accessFunctions.push(util.createAccessFunctionDefinition(action + itemName, getOwnFunction(action)));
-    });
-    angular.forEach(multipleItemActions, function(action) {
-      accessFunctions.push(util.createAccessFunctionDefinition(action + itemName + 's', getOwnFunction(action)));
-    });
-    return accessFunctions;
-    */
     var itemName = util.capitalizeFirstLetter(self.itemName);
     function getFuncDef(action, pularise, queuedPromise) {
       var name = pularise? action + itemName + 's' : action + itemName,
