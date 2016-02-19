@@ -95,7 +95,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     var deferred = $q.defer();
     var doc = {};
     util.copyFields(data, doc, self.__fieldNames);
-    self.__createInDbThenLoad(doc).then(function (newItem) {
+    self.__postAndLoad(doc).then(function (newItem) {
       //TODO: link relationships...
       deferred.resolve(newItem);
     });

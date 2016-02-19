@@ -1,26 +1,29 @@
 
 angular.module('Relate').factory('ItemChildrenRegister', function(util, $q, BaseCollection) {
 
-  var ItemChildrenRegister = function(db, parentCollection, childCollection, $window, options)    {var self = this;
+  var ItemChildrenRegister = function(db, parentCollection, childCollection, options)    {var self = this;
     var options = options || {};
     self.dbDocumentType = options.childrenOfParentDocumentType || // e.g. lnk_child_tasks_of_project
-        'lnk_child_' + childCollection.itemName + 's_of_' + parentCollection.itemName; 
-        
+        'lnk_child_' + childCollection.itemName + 's_of_' + parentCollection.itemName;
     self.__db = db;
     self.__parentCollection = parentCollection;
     self.__childCollection = childCollection;
-    self.__index = {};//format {parentId: {document: Object, liveChildren: []}
+    self.__cascadeDelete = options.cascadeDelete || false;
+    self.__index = {};//format {parentId: {doc: Object, liveChildren: []}
     self.__reverseIndex = {};//format {childId: parentId}
-    
   };
   util.inheritPrototype(ItemChildrenRegister, BaseCollection);
   var def = ItemChildrenRegister.prototype;
   
-  def.loadDocumentFromDb = function(document)     {var self = this;
-    var newEntry = {document: document};
-    self.__index[document.parentId] = newEntry;
-    angular.forEach(document.childrenIds, function (childId) {
-      self.__reverseIndex[childId] = document.parentId;
+  def.loadDocumentFromDb = function(doc)     {var self = this;
+    var parentId = doc.parentId;
+    if (self.__index[parentId]) {
+      throw "Found duplicate item children link in database."
+    }
+    var newEntry = {doc: doc};
+    self.__index[parentId] = newEntry;
+    angular.forEach(doc.childrenIds, function (childId) {
+      self.__reverseIndex[childId] = parentId;
     });
     return newEntry;
   };
@@ -35,50 +38,38 @@ angular.module('Relate').factory('ItemChildrenRegister', function(util, $q, Base
     }
   };
 
-  def.link = function(parentItem, childItem)    {var self = this;
-    /*
-    If old parent: unlink (update db and indexEntry accoridingly)
-      If new parent:
-
-
-    */
-    var deferred = $q.defer();
+  def.linkChildToParent = function(parentItem, childItem)    {var self = this;
+    var deferred = $q.defer(),
+        parentItemId = parentItem? parentItem._id : null,
+        indexEntry = self.__index[parentItemId],
+        innerPromise;
+    //Note: parentItemId and indexEntry could rightfully be null/undefined.
     self.__unlinkChildFromPreviousParent(childItem).then(function() {
-      var innerDeferred;
-      if (parentItem) {
-        var indexEntry = self.__index[parentItem._id];
-        if (indexEntry) {
-          innerDeferred = self.__addChildToParent(indexEntry, childItem);
-        } else {
-          var doc = {
-              parentId: parentItem._id,
-              childrenIds: [childItem._id]
-            };
-          innerDeferred = self.__createInDbThenLoad(doc);
-        }
-        innerDeferred.then( function () {
-          self.__reverseIndex[childItem._id] = parentItem.id;
-          deferred.resolve();
-        });
+      self.__reverseIndex[childItem._id] = parentItemId;
+      if (indexEntry) {
+        innerPromise = self.__addChildToIndexEntry(indexEntry, childItem);
       } else {
-        //parent is null, no need to create a link
-        delete self.__reverseIndex[childItem._id];
-        deferred.resolve();
+        innerPromise = self.__postAndLoad({
+          parentId: parentItem._id,
+          childrenIds: [childItem._id]
+        });
       }
+      innerPromise.then( function () {
+        deferred.resolve();
+      });
     });
     return deferred.promise;
   };
 
-  def.onParentDeleted = function(parentItem)    {var self = this;
-    //In response to a parent object being deleted.
+  def.respondToParentDeleted = function(parentItem)    {var self = this;
     var deferred = $q.defer();
     indexEntry = self.__index[parentItem._id];
     if (indexEntry) {
-      if (indexEntry.document.childrenIds.length > 0) {
+      if (self.__cascadeDelete && indexEntry.doc.childrenIds.length > 0) {
         debug(indexEntry);
         throw 'Cannot delete parent object as it still has children';
       } else {
-        self.__db.remove(indexEntry.document).then(function() {
+        self.__db.remove(indexEntry.doc).then(function() {
           delete self.__index[parentItem._id];
           deferred.resolve();
         });
@@ -87,18 +78,18 @@ angular.module('Relate').factory('ItemChildrenRegister', function(util, $q, Base
     return deferred.promise;
   };
 
-  def.onChildDelete = function(childItem)    {var self = this;
+  def.respondToChildDeleted = function(childItem)    {var self = this;
     return self.__unlinkChildFromPreviousParent(childItem);
   };
 
-  def.__addChildToParent = function(indexEntry, childItem)    {var self = this;
+  def.__addChildToIndexEntry = function(indexEntry, childItem)    {var self = this;
     var deferred = $q.defer();
     self.__ensureIndexEntryHasLiveChildren(indexEntry);
-    if (util.arrayContains(indexEntry.document.childrenIds, childItem._id)) {
+    if (util.arrayContains(indexEntry.doc.childrenIds, childItem._id)) {
       deferred.resolve();
     } else {
-      indexEntry.document.childrenIds.push(childItem.Id);
-      self.__db.put(indexEntry.document).then(function() {
+      indexEntry.doc.childrenIds.push(childItem.Id);
+      self.__db.put(indexEntry.doc).then(function() {
         indexEntry.liveChildren.push(childItem),
         deferred.resolve();
       });
@@ -110,7 +101,12 @@ angular.module('Relate').factory('ItemChildrenRegister', function(util, $q, Base
     var deferred = $q.defer();
     var oldParentId = self.__reverseIndex[childItem._id];
     if (oldParentId) {
-      self.__removeChildFromParent(oldParentId, childItem).then( function() {
+      var indexEntry = self.__index[oldParentId];
+      util.removeFromArray(indexEntry.doc.childrenIds, childItem._id);
+      self.__reverseIndex[childItem._id] = null;
+      self.__db.put(indexEntry.doc).then(function() {
+        self.__ensureIndexEntryHasLiveChildren(indexEntry);
+        util.removeFromArray(indexEntry.liveChildren, childItem);
         deferred.resolve();
       });
     } else {
@@ -118,25 +114,12 @@ angular.module('Relate').factory('ItemChildrenRegister', function(util, $q, Base
     }
     return deferred.promise;
   };
-  
-  def.__removeChildFromParent = function(parentId, childItem)    {var self = this;
-    var deferred = $q.defer();
-    var indexEntry = self.__index[parentId];
-      util.removeFromArray(indexEntry.document.childrenIds, childItem._id);
-      delete self.__reverseIndex[childItem._id];
-      self.__db.put(indexEntry.document).then(function() {
-        self.__ensureIndexEntryHasLiveChildren(indexEntry);
-        util.removeFromArray(indexEntry.liveChildren, childItem);
-        deferred.resolve();
-      });
-    return deferred.promise;
-  };
 
   def.__ensureIndexEntryHasLiveChildren = function(indexEntry)    {var self = this;
     var liveChildren = indexEntry.liveChildren;
     if (!liveChildren) {
       var liveChildren = [];
-      angular.forEach(indexEntry.document.childrenIds, function (childId) {
+      angular.forEach(indexEntry.doc.childrenIds, function (childId) {
         liveChildren.push(self.__childCollection.__get__(childId));
       });
       indexEntry.liveChildren = liveChildren;

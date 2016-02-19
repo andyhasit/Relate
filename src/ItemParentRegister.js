@@ -5,67 +5,59 @@ angular.module('Relate').factory('ItemParentRegister', function(util, $q, BaseCo
     var options = options || {};
     self.dbDocumentType = options.parentOfChildDocumentType ||  // e.g. lnk_child_tasks_of_project
         'lnk_parent_' + parentCollection.itemName + '_of_' + childCollection.itemName;
-    self.__db = db;    
-    self.parentCollection = parentCollection;
-    self.childCollection = childCollection;
+    self.__db = db;
     self.__index = {};
+    self.__parentCollection = parentCollection;
   };
   util.inheritPrototype(ItemParentRegister, BaseCollection);
   var def = ItemParentRegister.prototype;
 
   def.loadDocumentFromDb = function(document)    {var self = this;
-    //TODO: check for duplicates here?
+    if (self.__index[document.childId]) {
+      throw "Found duplicate item parent link in database."
+    }
     var newIndexEntry = {document: document};
     self.__index[document.childId] = newIndexEntry;
     return newIndexEntry;
   };
   
   def.getParent = function(childItem)    {var self = this;
-    //Returns actual object, or null.
-    //TODO: is it OK for this to return null if not initialised?
-    var indexEntry = self.__index[childItem._id];
-    if (indexEntry && !indexEntry.pending) {
-      if (angular.isUndefined(indexEntry.liveObject)) {
-        var parent = self.parentCollection.__get__(indexEntry.document.parentId);
-        if (angular.isUndefined(parent)) {
-          parent = null;
-        }
-        indexEntry.liveObject = parent;
-      } 
-      return indexEntry.liveObject;
-    } else {
-      return null;
-    }
-  };
-  
-  def.link = function(parentItem, childItem)    {var self = this;
-    if (parentItem) {
-      parentItemId = parentItem._id;
-    } else {
-      parentItemId = null;
-    }
     var indexEntry = self.__index[childItem._id];
     if (indexEntry) {
-      if (indexEntry.pending) { // Db creation is pending
-        indexEntry.pendingPromise.then( function(newEntry) {
-          self.__setChildParent(newEntry, parentItem);
-        });
-      } else { // Db creation is not pending
-        self.__setChildParent(indexEntry, parentItem);
+      if (angular.isUndefined(indexEntry.liveObject)) {
+        indexEntry.liveObject = self.__parentCollection.__get__(indexEntry.document.parentId) || null;
       }
-    } else {
-      var document = {
-        parentId: parentItemId, 
-        childId: childItem._id
-      };
-      self.__createPending(childItem._id, document);
+      return indexEntry.liveObject;
     }
+    return null;
   };
   
-  def.onChildDeleted = function(childItem)    {var self = this;
-    var deferred = $q.defer();
-    var id = childItem._id;
-    var indexEntry = self.__index[id];
+  def.linkChildToParent = function(parentItem, childItem)    {var self = this;
+    var deferred = $q.defer(),
+        parentItemId = parentItem? parentItem._id : null,
+        indexEntry = self.__index[childItem._id];
+    if (indexEntry) {
+      indexEntry.document.parentId = parentItemId;
+      self.__db.put(indexEntry.document).then(function (result) {
+        indexEntry.document._rev = result.rev;
+        indexEntry.liveObject = parentItem;
+        deferred.resolve();
+      });
+    } else {
+      self.__postAndLoad({
+        parentId: parentItemId, 
+        childId: childItem._id
+      }).then(function (result) {
+        deferred.resolve();
+      });      
+    }
+    return deferred.promise;
+  };
+  
+  def.respondToChildDeleted = function(childItem)    {var self = this;
+    var deferred = $q.defer(),
+        id = childItem._id,
+        indexEntry = self.__index[id];
     if (indexEntry) {
       self.__db.remove(indexEntry.document).then(function (result) {
         delete self.__index[id];
@@ -73,14 +65,6 @@ angular.module('Relate').factory('ItemParentRegister', function(util, $q, BaseCo
       });
     }
     return deferred.promise;
-  };
-  
-  def.__setChildParent = function(indexEntry, parentItem)    {var self = this;
-    indexEntry.document.parentId = parentItemId;
-    self.__db.put(indexEntry.document).then(function (result) {
-      indexEntry.document._rev = result.rev;
-      indexEntry.liveObject = parentItem;
-    });
   };
   
   return ItemParentRegister;

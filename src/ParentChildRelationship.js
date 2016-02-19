@@ -8,7 +8,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     self.__parentDeleteInProgress = new ValueRegister();
     self.__parentCollection = parentCollection;
     self.__childCollection = childCollection;
-    self.__cascadeDelete = options.cascadeDelete || false;
+    self.__cascadeDelete = options.cascadeDelete || true;
     self.itemParentRegister = new ItemParentRegister(db, parentCollection, childCollection, options);
     self.itemChildrenRegister = new ItemChildrenRegister(db, parentCollection, childCollection, options);
     parentCollection.registerRelationship(self);
@@ -40,9 +40,10 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
   };
   
   def.__setChildParent__ = function (childItem, parentItem)    {var self = this;
-    self.itemParentRegister.link(parentItem, childItem);
-    self.itemChildrenRegister.link(parentItem, childItem);
-    // TODO: chain promises?
+    return $q.all([
+      self.itemParentRegister.linkChildToParent(parentItem, childItem), 
+      self.itemChildrenRegister.linkChildToParent(parentItem, childItem)
+    ]);
   };
   
   def.respondToItemDeleted = function (item, collection)     {var self = this;
@@ -67,7 +68,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     //Note that __parentDeleteInProgress will be set to false before promises are all resolved (non critical)
     self.__parentDeleteInProgress.set(item, false);
     $q.all(childDeletions).then(function() {
-      self.itemChildrenRegister.onParentDeleted(item);
+      self.itemChildrenRegister.respondToParentDeleted(item);
       deferred.resolve();
     });
     return deferred.promise;
@@ -77,12 +78,12 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     var deferred = $q.defer(),
         childDeletions = [],
         parentItem = self.__getParent__(item);
-    childDeletions.push(self.itemParentRegister.onChildDeleted(item));
+    childDeletions.push(self.itemParentRegister.respondToChildDeleted(item));
     /* This is to prevent many calls to unlinking children of a parent when the parent will 
     be deleted anyway. Just to save on db writes.
     */
     if (parentItem && !self.__parentDeleteInProgress.get(parentItem)) {
-      childDeletions.push(self.itemChildrenRegister.onChildDeleted(item));
+      childDeletions.push(self.itemChildrenRegister.respondToChildDeleted(item));
     }
     $q.all(childDeletions).then(function() {
       deferred.resolve();

@@ -9,14 +9,7 @@ angular.module('Relate').factory('BaseCollection', function($q) {
     self.__db = null;
   };
   
-  BaseCollection.prototype.__createPending = function(key, document)    {var self = this;
-    self.__index[key] = {
-      pending: true,
-      pendingPromise: self.__createInDbThenLoad(document)
-    };
-  };
-  
-  BaseCollection.prototype.__createInDbThenLoad = function(document)    {var self = this;
+  BaseCollection.prototype.__postAndLoad = function(document)    {var self = this;
     var defered = $q.defer();
     document.type = self.typeIdentifier;
     self.__db.post(document).then( function (result) {
