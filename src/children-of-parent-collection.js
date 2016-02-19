@@ -1,7 +1,7 @@
 
-angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q, BaseCollection) {
+angular.module('Relate').factory('ItemChildrenRegister', function(util, $q, BaseCollection) {
 
-  var ChildrenOfParentCollection = function(db, parentCollection, childCollection, $window, options)    {var self = this;
+  var ItemChildrenRegister = function(db, parentCollection, childCollection, $window, options)    {var self = this;
     var options = options || {};
     self.dbDocumentType = options.childrenOfParentDocumentType || // e.g. lnk_child_tasks_of_project
         'lnk_child_' + childCollection.itemName + 's_of_' + parentCollection.itemName; 
@@ -13,8 +13,8 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
     self.__reverseIndex = {};//format {childId: parentId}
     
   };
-  util.inheritPrototype(ChildrenOfParentCollection, BaseCollection);
-  var def = ChildrenOfParentCollection.prototype;
+  util.inheritPrototype(ItemChildrenRegister, BaseCollection);
+  var def = ItemChildrenRegister.prototype;
   
   def.loadDocumentFromDb = function(document)     {var self = this;
     var newEntry = {document: document};
@@ -54,7 +54,7 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
               parentId: parentItem._id,
               childrenIds: [childItem._id]
             };
-          innerDeferred = self.__createDocumentInDb(doc);
+          innerDeferred = self.__createInDbThenLoad(doc);
         }
         innerDeferred.then( function () {
           self.__reverseIndex[childItem._id] = parentItem.id;
@@ -143,5 +143,5 @@ angular.module('Relate').factory('ChildrenOfParentCollection', function(util, $q
     }
   };
 
-  return ChildrenOfParentCollection;
+  return ItemChildrenRegister;
 });

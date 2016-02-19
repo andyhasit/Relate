@@ -1,7 +1,7 @@
 
-angular.module('Relate').factory('ParentOfChildCollection', function(util, $q, BaseCollection) {
+angular.module('Relate').factory('ItemParentRegister', function(util, $q, BaseCollection) {
 
-  var Class = function(db, parentCollection, childCollection, options)    {var self = this;
+  var ItemParentRegister = function(db, parentCollection, childCollection, options)    {var self = this;
     self.__db = db;
     self.parentCollection = parentCollection;
     self.childCollection = childCollection;
@@ -11,8 +11,8 @@ angular.module('Relate').factory('ParentOfChildCollection', function(util, $q, B
     self.dbDocumentType = options.parentOfChildDocumentType ||
         'lnk_parent_' + parentCollection.itemName + '_of_' + childCollection.itemName;
   };
-  util.inheritPrototype(Class, BaseCollection);
-  var def = Class.prototype;
+  util.inheritPrototype(ItemParentRegister, BaseCollection);
+  var def = ItemParentRegister.prototype;
 
   def.loadDocumentFromDb = function(document)    {var self = this;
     //TODO: check for duplicates here?
@@ -84,7 +84,7 @@ angular.module('Relate').factory('ParentOfChildCollection', function(util, $q, B
     }
   };
   
-  return Class;
+  return ItemParentRegister;
 });
 
     

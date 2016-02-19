@@ -25,7 +25,7 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
   def.printInfo = function ()  {var self = this;
     angular.forEach(self.__collections, function(collection) {
       angular.forEach(collection.getAccessFunctionDefinitions(), function(accessFunc) {
-        console.log('model.' + accessFunc.RelateModelFunctionName);
+        console.log('model.' + accessFunc.ModelFunctionName);
       });
     });
   };

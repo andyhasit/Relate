@@ -30,6 +30,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   };
   
   def.getAccessFunctionDefinitions = function()    {var self = this;
+    /*
     var singleItemActions = ['new', 'get', 'save', 'delete'];
     var multipleItemActions = ['find'];
     var accessFunctions = [];
@@ -44,6 +45,20 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
       accessFunctions.push(util.createAccessFunctionDefinition(action + itemName + 's', getOwnFunction(action)));
     });
     return accessFunctions;
+    */
+    var itemName = util.capitalizeFirstLetter(self.itemName);
+    function getFuncDef(action, pularise, queuedPromise) {
+      var name = pularise? action + itemName + 's' : action + itemName,
+          func = self['__' + action + '__'];
+      return util.createAccessFunctionDefinition(name, func, queuedPromise);
+    }
+    return [
+      getFuncDef('new', false, true),
+      getFuncDef('save', false, true),
+      getFuncDef('delete', false, true),
+      getFuncDef('get', false, false),
+      getFuncDef('find', true, false)
+    ]
   };
   
   def.__get__ = function(id)    {var self = this;
@@ -51,12 +66,15 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   };
 
   def.__find__ = function(query)    {var self = this;
-    //query can be an object like {name: 'do it'} or empty, or function
+    /*
+    query can be:
+      a function returning true or false
+      an object like {name: 'deirdre'} -- which returns items whose properties match.
+      an empty object {} -- which returns all items.
+    TODO: what about parent properties?
+    */
     var test;
-    if (typeof query === 'undefined') {
-      test = function(x) {return true};
-    }
-    else if (typeof query === 'function') {
+    if (typeof query === 'function') {
       test = query;
     } else if (typeof query === 'object') {
       test = function(item) {
@@ -74,7 +92,14 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   };
   
   def.__new__ = function(data)    {var self = this;
-    return self.__createDocumentInDb(data);
+    var deferred = $q.defer();
+    var doc = {};
+    util.copyFields(data, doc, self.__fieldNames);
+    self.__createInDbThenLoad(doc).then(function (newItem) {
+      //TODO: link relationships...
+      deferred.resolve(newItem);
+    });
+    return deferred.promise;
   };
 
   def.__save__ = function(item)    {var self = this;
@@ -91,10 +116,8 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   def.__delete__ = function(item)    {var self = this;
     var deferred = $q.defer();
     var childDeletions = [];
-    /* Note that calls to relationship._removeItem must not depend on a promise themselves
-    */
     angular.forEach(self.__relationships, function(relationship) {
-      childDeletions.push(relationship._removeItem(item));
+      childDeletions.push(relationship.respondToItemDeleted(item, self));
     });
     $q.all(childDeletions).then(function() {
       self.__db.remove(item).then(function (result) {

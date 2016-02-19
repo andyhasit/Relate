@@ -5,49 +5,31 @@ angular.module('Relate').factory('BaseCollection', function($q) {
   What it uses as keys and values is up to the derived class.
   */
   var BaseCollection = function()    {var self = this;
-    self._index = {};
+    self.__index = null;
+    self.__db = null;
   };
   
   BaseCollection.prototype.__createPending = function(key, document)    {var self = this;
     self._index[key] = {
       pending: true,
-      pendingPromise: self.__createDocumentInDb(document)
+      pendingPromise: self.__createInDbThenLoad(document)
     };
   };
   
-  BaseCollection.prototype.__getIndexEntry = function(key)    {var self = this;
-    //Returns a promise which resolves to the new indexEntry.
-    var defer = $q.defer();
-    var indexEntry = self._index[key];
-    if (indexEntry) {
-      if (indexEntry.pending) { // Db creation is pending
-        indexEntry.pendingPromise.then( function (newIndexEntry) {
-          defer.resolve(newIndexEntry);
-        });
-      } else { // Db creation is not pending
-        defer.resolve(indexEntry);
-      }
-    } else {
-      defer.resolve(null);
-    }
-    return defer.promise;
-  };
-  
-  BaseCollection.prototype.__createDocumentInDb = function(document)    {var self = this;
-    //Creates the new document in the database and loads it.
-    var defer = $q.defer();
+  BaseCollection.prototype.__createInDbThenLoad = function(document)    {var self = this;
+    var defered = $q.defer();
     document.type = self.typeIdentifier;
     self.__db.post(document).then( function (result) {
       if (result.ok) {
         self.__db.get(result.id).then( function (docFromDb) {        
-          defer.resolve(self.loadDocumentFromDb(docFromDb));
+          defered.resolve(self.loadDocumentFromDb(docFromDb));
         });
       } else {
         console.log(result);
         throw "Error fetching data";
       }
     });
-    return defer.promise;
+    return defered.promise;
   };
   
   return BaseCollection;

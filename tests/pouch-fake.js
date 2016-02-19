@@ -20,7 +20,7 @@ angular.module('PouchFake', []).service('db', function($q) {
   }
   self.documents = {};
   
-  function copyObject(data) {
+  function copyObject(data) {//TODO: angular.copy();
     var document = {};
     for (var prop in data) {
       if (data.hasOwnProperty(prop)) {
@@ -29,6 +29,7 @@ angular.module('PouchFake', []).service('db', function($q) {
     }
     return document;
   }
+  
   self.post = function(data) {
     var document = copyObject(data);
     var id = data._id || newId();
