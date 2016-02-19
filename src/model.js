@@ -56,8 +56,8 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
     var childCollection = self.__collections[childCollectionName];
     var relationship = new ParentChildRelationship(self.__db, parentCollection, childCollection, options);
     self.__collections[relationship.collectionName] = relationship;
-    self.__registerDocumentTypeLoader(relationship.parentOfChildCollection);
-    self.__registerDocumentTypeLoader(relationship.childrenOfParentCollection);
+    self.__registerDocumentTypeLoader(relationship.itemParentRegister);
+    self.__registerDocumentTypeLoader(relationship.itemChildrenRegister);
     return relationship;
   };
   

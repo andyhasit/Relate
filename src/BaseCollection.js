@@ -10,7 +10,7 @@ angular.module('Relate').factory('BaseCollection', function($q) {
   };
   
   BaseCollection.prototype.__createPending = function(key, document)    {var self = this;
-    self._index[key] = {
+    self.__index[key] = {
       pending: true,
       pendingPromise: self.__createInDbThenLoad(document)
     };

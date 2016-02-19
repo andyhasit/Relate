@@ -8,8 +8,9 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     self.__parentDeleteInProgress = new ValueRegister();
     self.__parentCollection = parentCollection;
     self.__childCollection = childCollection;
-    self.__itemParentRegister = new ItemParentRegister(db, parentCollection, childCollection, options);
-    self.__itemChildrenRegister = new ItemChildrenRegister(db, parentCollection, childCollection, options);
+    self.__cascadeDelete = options.cascadeDelete || false;
+    self.itemParentRegister = new ItemParentRegister(db, parentCollection, childCollection, options);
+    self.itemChildrenRegister = new ItemChildrenRegister(db, parentCollection, childCollection, options);
     parentCollection.registerRelationship(self);
     childCollection.registerRelationship(self);
   };
@@ -31,16 +32,16 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
   };
   
   def.__getParent__ = function (childItem)    {var self = this;
-    return self.__itemParentRegister.getParent(childItem);
+    return self.itemParentRegister.getParent(childItem);
   };
   
   def.__getChildren__ = function (parentItem)    {var self = this;
-    return self.__itemChildrenRegister.getChildren(parentItem);
+    return self.itemChildrenRegister.getChildren(parentItem);
   };
   
   def.__setChildParent__ = function (childItem, parentItem)    {var self = this;
-    self.__itemParentRegister.link(parentItem, childItem);
-    self.__itemChildrenRegister.link(parentItem, childItem);
+    self.itemParentRegister.link(parentItem, childItem);
+    self.itemChildrenRegister.link(parentItem, childItem);
     // TODO: chain promises?
   };
   
@@ -58,13 +59,15 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     var deferred = $q.defer();
     self.__parentDeleteInProgress.set(item, true);
     var childDeletions = [];
-    angular.forEach(self.__getChildren__(item), function (childItem) {
-      childDeletions.push(self.__childCollection.remove(childItem));
-    });
+    if (self.__cascadeDelete) {
+      angular.forEach(self.__getChildren__(item), function (childItem) {
+        childDeletions.push(self.__childCollection.__delete__(childItem));
+      });
+    }
     //Note that __parentDeleteInProgress will be set to false before promises are all resolved (non critical)
     self.__parentDeleteInProgress.set(item, false);
     $q.all(childDeletions).then(function() {
-      self.__itemChildrenRegister.onParentDeleted(item);
+      self.itemChildrenRegister.onParentDeleted(item);
       deferred.resolve();
     });
     return deferred.promise;
@@ -74,12 +77,12 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     var deferred = $q.defer(),
         childDeletions = [],
         parentItem = self.__getParent__(item);
-    childDeletions.push(self.__itemParentRegister.onChildDeleted(item));
+    childDeletions.push(self.itemParentRegister.onChildDeleted(item));
     /* This is to prevent many calls to unlinking children of a parent when the parent will 
     be deleted anyway. Just to save on db writes.
     */
     if (parentItem && !self.__parentDeleteInProgress.get(parentItem)) {
-      childDeletions.push(self.__itemChildrenRegister.onChildDeleted(item));
+      childDeletions.push(self.itemChildrenRegister.onChildDeleted(item));
     }
     $q.all(childDeletions).then(function() {
       deferred.resolve();
