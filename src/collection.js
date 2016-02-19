@@ -1,13 +1,14 @@
 
 angular.module('Relate').factory('Collection', function(util, $q, BaseCollection) {
   
-  var Collection = function(db, singleItemName, fieldNames, factoryFunction, options)    {var self = this;
+  var Collection = function(db, singleItemName, fieldNames, options)    {var self = this;
     var options = options || {};
     self.itemName = singleItemName;
-    self.collectionName = options.collectionName || singleItemName; //This is how a relationship references collection
+    self.collectionName = singleItemName; //This is how a relationship references collection
+    self.pluralName = options.pluralName || singleItemName + 's'
     self.dbDocumentType = options.dbDocumentType || singleItemName;
     self.__db = db;
-    self.__factoryFunction = factoryFunction;
+    self.__factoryFunction = options.factoryFunction || function(){};
     self.__items = {};
     self.__relationships = [];
     self.__fieldNames = fieldNames.slice();
@@ -30,9 +31,11 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   };
   
   def.getAccessFunctionDefinitions = function()    {var self = this;
-    var itemName = util.capitalizeFirstLetter(self.itemName);
+    var cap = util.capitalizeFirstLetter,
+        singleName = cap(self.itemName),
+        pluralName = cap(self.pluralName);
     function getFuncDef(action, pularise, queuedPromise) {
-      var name = pularise? action + itemName + 's' : action + itemName,
+      var name = pularise? action + pluralName : action + singleName,
           func = self['__' + action + '__'];
       return util.createAccessFunctionDefinition(name, func, queuedPromise);
     }

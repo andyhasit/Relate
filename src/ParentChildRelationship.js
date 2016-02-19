@@ -3,8 +3,11 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
   
   var ParentChildRelationship = function(db, parentCollection, childCollection, options)    {var self = this;
     var options = options || {};
-    self.collectionName = options.collectionName || 
-        'lnk_' + parentCollection.itemName + '_' + childCollection.itemName + 's';
+    self.__parentCollectionName = parentCollection.itemName;
+    self.__childCollectionName = childCollection.itemName;
+    self.__childAlias = options.childAlias || childCollection.pluralName;
+    self.__parentAlias = options.parentAlias || parentCollection.itemName;
+    self.collectionName = 'lnk_' + self.__parentAlias + '_' + self.__childAlias;
     self.__parentDeleteInProgress = new ValueRegister();
     self.__parentCollection = parentCollection;
     self.__childCollection = childCollection;
@@ -17,13 +20,10 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
   var def = ParentChildRelationship.prototype;
   
   def.getAccessFunctionDefinitions = function()    {var self = this;
-    var singleItemActions = ['new', 'get', 'save', 'delete'],
-        multipleItemActions = ['find'],
-        __childCollectionName = util.capitalizeFirstLetter(self.__childCollection.itemName),
-        __parentCollectionName = util.capitalizeFirstLetter(self.__parentCollection.itemName),
-        getParentFnName = 'get' + __childCollectionName + __parentCollectionName,
-        getChildrenFnName = 'get' + __parentCollectionName + __childCollectionName + 's',
-        setChildParentFnName = 'set' + __childCollectionName + __parentCollectionName;
+    var cap = util.capitalizeFirstLetter,
+        getParentFnName = 'get' + cap(self.__childCollectionName) + cap(self.__parentAlias),
+        getChildrenFnName = 'get' + cap(self.__parentCollectionName) + cap(self.__childAlias),
+        setChildParentFnName = 'set' + cap(self.__childCollectionName) + cap(self.__parentAlias);
     return [
       util.createAccessFunctionDefinition(getParentFnName, self.__getParent__),
       util.createAccessFunctionDefinition(getChildrenFnName, self.__getChildren__),

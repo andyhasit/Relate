@@ -4,8 +4,7 @@ describe('Model', function() {
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
   
-  var db, model, $rootScope, projectCollection, taskCollection, task1,
-    task2, task3, task4, project1, project2;
+  var db, model, $rootScope, task1, task2, task3, task4, project1, project2;
   
   beforeEach(inject(function( _RelateModel_, _$rootScope_, FakeDb, $q) {
     $rootScope = _$rootScope_;

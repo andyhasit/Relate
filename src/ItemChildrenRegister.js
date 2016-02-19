@@ -3,8 +3,9 @@ angular.module('Relate').factory('ItemChildrenRegister', function(util, $q, Base
 
   var ItemChildrenRegister = function(db, parentCollection, childCollection, options)    {var self = this;
     var options = options || {};
-    self.dbDocumentType = options.childrenOfParentDocumentType || // e.g. lnk_child_tasks_of_project
-        'lnk_child_' + childCollection.itemName + 's_of_' + parentCollection.itemName;
+    var childAlias = options.childAlias || childCollection.itemName;
+    var parentAlias = options.parentAlias || parentCollection.itemName;
+    self.dbDocumentType = 'lnk_child_' + childAlias + 's_of_' + parentAlias;
     self.__db = db;
     self.__parentCollection = parentCollection;
     self.__childCollection = childCollection;

@@ -32,8 +32,8 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
   
   /************* MODEL DEFINITION FUNCTIONS *************/
   
-  def.defineCollection = function(singleItemName, fieldNames, factory, options)  {var self = this;
-    var collection = new Collection(self.__db, singleItemName, fieldNames, factory, options);
+  def.defineCollection = function(singleItemName, fieldNames, options)  {var self = this;
+    var collection = new Collection(self.__db, singleItemName, fieldNames, options);
     self.__collections[collection.collectionName] = collection;
     self.__registerDocumentTypeLoader(collection);
     return collection;
@@ -115,9 +115,7 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
     var dbDocumentType = collection.dbDocumentType;
     if (dbDocumentType in self.__dbDocumentTypeLoaders) {
       var claimedBy = self.__dbDocumentTypeLoaders[dbDocumentType];
-      throw 'Collection \"' + collection.collectionName + '\" tried to register for the dbDocumentType: \"' + dbDocumentType + 
-        '\" but it is already claimed by collection \"' + collection.collectionName + '\".' +
-        '\nTypeIdentifiers are strings used to determine what collection each document should be loaded in';
+      throw 'More than one collection/relationship attempting to register dbDocumentType: "' + dbDocumentType + '".';
     } else {
       self.__dbDocumentTypeLoaders[dbDocumentType] = collection;
     }
