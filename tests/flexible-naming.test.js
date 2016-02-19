@@ -1,5 +1,5 @@
 
-describe('Flexible configuration-', function() {
+describe('Flexible naming', function() {
   
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
