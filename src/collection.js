@@ -5,7 +5,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     var options = options || {};
     self.itemName = singleItemName;
     self.collectionName = singleItemName; //This is how a relationship references collection
-    self.pluralName = options.pluralName || singleItemName + 's'
+    self.plural = options.plural || singleItemName + 's'
     self.dbDocumentType = options.dbDocumentType || singleItemName;
     self.__db = db;
     self.__factoryFunction = options.factoryFunction || function(){};
@@ -33,9 +33,9 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   def.getAccessFunctionDefinitions = function()    {var self = this;
     var cap = util.capitalizeFirstLetter,
         singleName = cap(self.itemName),
-        pluralName = cap(self.pluralName);
-    function getFuncDef(action, pularise, queuedPromise) {
-      var name = pularise? action + pluralName : action + singleName,
+        plural = cap(self.plural);
+    function getFuncDef(action, pluralise, queuedPromise) {
+      var name = pluralise? action + plural : action + singleName,
           func = self['__' + action + '__'];
       return util.createAccessFunctionDefinition(name, func, queuedPromise);
     }
@@ -44,12 +44,19 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
       getFuncDef('save', false, true),
       getFuncDef('delete', false, true),
       getFuncDef('get', false, false),
-      getFuncDef('find', true, false)
+      getFuncDef('find', true, false),
+      getFuncDef('all', true, false),
     ]
   };
   
   def.__get__ = function(id)    {var self = this;
     return self.__items[id];
+  };
+  
+  def.__all__ = function()    {var self = this;
+    return Object.keys(self.__items).map(function(i){
+      return self.__items[i];
+    });
   };
 
   def.__find__ = function(query)    {var self = this;

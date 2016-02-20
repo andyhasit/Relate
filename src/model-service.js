@@ -1,19 +1,13 @@
 
-angular.module('Relate').factory('RelateModel', function($q, Collection, ParentChildRelationship) {
+angular.module('Relate').service('model', function($q, Collection, ParentChildRelationship) {
+  var self = this;
   
-  var RelateModel = function(db)  {var self = this;
+  self.initialize = function(db, query) {
     self.__db = db;
-    self.__collections = {};
-    self.__dbDocumentTypeLoaders = {};
-    self.__lastPromiseInQueue = $q.when();
-    self.__relationshipDefinitionFunctions = {
-      parentChild: self.__createParentChildRelationship,
-    }
   };
-  var def = RelateModel.prototype;
-    
+  
   var __dataReady;
-  def.onDataReady = function ()  {var self = this;
+  self.dataReady = function ()  {var self = this;
     if (__dataReady === undefined) {
       __dataReady = $q.defer();
       self.__initializeModel().then( function () {
@@ -23,7 +17,7 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
     return __dataReady.promise;
   };
   
-  def.printInfo = function ()  {var self = this;
+  self.printInfo = function ()  {var self = this;
     angular.forEach(self.__collections, function(collection) {
       angular.forEach(collection.getAccessFunctionDefinitions(), function(accessFunc) {
         console.log('model.' + accessFunc.ModelFunctionName);
@@ -33,24 +27,24 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
   
   /************* MODEL DEFINITION FUNCTIONS *************/
   
-  def.defineCollection = function(singleItemName, fieldNames, options)  {var self = this;
+  self.defineCollection = function(singleItemName, fieldNames, options)  {var self = this;
     var collection = new Collection(self.__db, singleItemName, fieldNames, options);
     self.__collections[collection.collectionName] = collection;
     self.__registerDocumentTypeLoader(collection);
     return collection;
   };
   
-  def.defineRelationship = function(options)  {var self = this;
-    var relationshipType = options.type
+  self.defineRelationship = function(options)  {var self = this;
+    var relationshipType = options.type;
     var fn = self.__relationshipDefinitionFunctions[relationshipType];
     if (typeof fn === 'function') {
       return fn.apply(self, [options]);
     } else {
-      alert('fail');
+      throw '' + options.type +' is not a valid relationship type';
     }
   };
   
-  def.__createParentChildRelationship = function(options)  {var self = this;
+  self.__createParentChildRelationship = function(options)  {var self = this;
     var parentCollectionName = options.parent;
     var childCollectionName = options.child;
     var parentCollection = self.__collections[parentCollectionName];
@@ -87,7 +81,7 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
     
   */
   
-  def.__createAccessFunctions = function ()  {var self = this;
+  self.__createAccessFunctions = function ()  {var self = this;
     angular.forEach(self.__collections, function(collection) {
       angular.forEach(collection.getAccessFunctionDefinitions(), function(accessFunc) {
         var func;
@@ -101,13 +95,13 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
     });
   };
   
-  def.__getNonQueuedFunction = function (collection, collectionFunction)  {var self = this;
+  self.__getNonQueuedFunction = function (collection, collectionFunction)  {var self = this;
     return function() {
       return collectionFunction.apply(collection, arguments);
     }
   };
   
-  def.__getQueuedFunction = function (collection, collectionFunction)  {var self = this;
+  self.__getQueuedFunction = function (collection, collectionFunction)  {var self = this;
     return function() {
       var originalArgs = arguments;
       var deferred = $q.defer();
@@ -124,7 +118,7 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
 
   /************* INITAL LOADING FUNCTIONALITY *************/
   
-  def.__registerDocumentTypeLoader = function(collection)  {var self = this;
+  self.__registerDocumentTypeLoader = function(collection)  {var self = this;
     var dbDocumentType = collection.dbDocumentType;
     if (dbDocumentType in self.__dbDocumentTypeLoaders) {
       var claimedBy = self.__dbDocumentTypeLoaders[dbDocumentType];
@@ -134,7 +128,7 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
     }
   };
   
-  def.__initializeModel = function ()  {var self = this;
+  self.__initializeModel = function ()  {var self = this;
     var defer = $q.defer();
     var allDocsDefer = self.__db.allDocs({
       include_docs: true,
@@ -152,13 +146,14 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
     return defer.promise;
   };
   
-  def.__addDocumentToCollection = function (document)  {var self = this;
+  self.__addDocumentToCollection = function (document)  {var self = this;
     var dbDocumentType = document.type;
     if (dbDocumentType) {
       var collection = self.__dbDocumentTypeLoaders[dbDocumentType];
       if (collection) {
         collection.loadDocumentFromDb(document, dbDocumentType);
       } else {
+        console.log(document);
         console.log('Could not load document \"' + document._id + '\" as type was not recognised (' + dbDocumentType + ')');
       }
     } else {
@@ -167,6 +162,12 @@ angular.module('Relate').factory('RelateModel', function($q, Collection, ParentC
     }
   };
   
-  return RelateModel;
+  self.__collections = {};
+  self.__dbDocumentTypeLoaders = {};
+  self.__lastPromiseInQueue = $q.when();
+  self.__relationshipDefinitionFunctions = {
+    parentChild: self.__createParentChildRelationship,
+  };
+  
 });
 

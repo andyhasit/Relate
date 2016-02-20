@@ -36,7 +36,7 @@ describe('Flexible naming', function() {
   
   it('two collections with plural name', function() {
     model.defineCollection('project', ['name']);
-    model.defineCollection('person', ['name'], {pluralName: 'people'});
+    model.defineCollection('person', ['name'], {plural: 'people'});
     model.defineRelationship({
       type:'parentChild',
       parent:'project', 

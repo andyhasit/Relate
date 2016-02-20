@@ -5,7 +5,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     var options = options || {};
     self.__parentCollectionName = parentCollection.itemName;
     self.__childCollectionName = childCollection.itemName;
-    self.__childAlias = options.childAlias || childCollection.pluralName;
+    self.__childAlias = options.childAlias || childCollection.plural;
     self.__parentAlias = options.parentAlias || parentCollection.itemName;
     self.collectionName = 'lnk_' + self.__parentAlias + '_' + self.__childAlias;
     self.__parentDeleteInProgress = new ValueRegister();

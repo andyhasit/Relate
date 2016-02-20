@@ -55,10 +55,28 @@ angular.module('PouchFake', []).factory('FakeDb', function($q) {
     );
   };
   
+  def.extractRev = function(str) {
+    return parseInt(str.substr(0, str.indexOf('-')));
+  }
+  
   def.put = function(data) {var self = this;
     var doc = angular.copy(data);
     var id = doc._id;
-    var newRev = "2-" + id;
+    var newRev = self.extractRev(doc._rev) + 1 + "-" + id;
+    doc._rev = newRev;
+    self.__docs[id] = doc;
+    return $q.when({
+          "ok": true,
+          "id": doc._id,
+          "rev": doc._rev
+        }
+    );
+  };
+  
+  def.put_clone = function(data) {var self = this;
+    var doc = angular.copy(data);
+    var id = doc._id;
+    var newRev = self.extractRev(doc._rev) + 1 + "-" + id;
     doc._rev = newRev;
     self.__docs[id] = doc;
     return $q.when({
