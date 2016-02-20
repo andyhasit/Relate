@@ -6,7 +6,7 @@ describe('Promise queuing', function() {
   
   var db, model, $rootScope, task1, task2, task3, task4, project1, project2;
   
-  beforeEach(inject(function( _RelateModel_, _$rootScope_, FakeDb, _$q_) {
+  beforeEach(inject(function( _model_, _$rootScope_, FakeDb, _$q_) {
     $rootScope = _$rootScope_;
     db = new FakeDb();
     $q = _$q_;
@@ -25,7 +25,8 @@ describe('Promise queuing', function() {
       ['project_1', 'task_2']
     ]);
     
-    model = new _RelateModel_(db);
+    model = _model_;
+    model.initialize(db);
     model.defineCollection('project', ['name'], DummyFactory);
     model.defineCollection('task', ['name'], DummyFactory);
     model.defineRelationship({
@@ -34,7 +35,7 @@ describe('Promise queuing', function() {
       child:'task'
     });
     
-    model.onDataReady();
+    model.dataReady();
     $rootScope.$apply();
     
     task1 = model.getTask('task_1');
@@ -58,7 +59,7 @@ describe('Promise queuing', function() {
     expect(task2._rev).not.toEqual(oldRev2);
   });
   
-  fit('"put" gets called once if promises are not flushed', function() {
+  it('"put" gets called once if promises are not flushed', function() {
     var task3;
     model.newTask('test').then(function(result) {
       task3 = result;

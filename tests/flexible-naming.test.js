@@ -5,14 +5,15 @@ describe('Flexible naming', function() {
   beforeEach(module('PouchFake'));
   var db, model, $rootScope;
   
-  beforeEach(inject(function( _RelateModel_, _$rootScope_, FakeDb, $q) {
+  beforeEach(inject(function( _model_, _$rootScope_, FakeDb, $q) {
     $rootScope = _$rootScope_;
     var db = new FakeDb();
-    model = new _RelateModel_(db);
+    model = _model_;
+    model.initialize(db);
   }));
   
   function ready() {
-    model.onDataReady();
+    model.dataReady();
     $rootScope.$apply();
   }
   

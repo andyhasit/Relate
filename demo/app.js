@@ -37,20 +37,18 @@ app.controller('Ctrl', function($scope, model) {
   };
   
   $scope.linkCatToPerson = function() {
-    c.log($scope.linkCat);
-    c.log($scope.linkPerson);
     model.setCatOwner($scope.linkCat, $scope.linkPerson);
   };
   
-
-  
-  
+  $scope.unlinkCatFromPerson = function(cat) {
+    model.setCatOwner(cat, null);
+  };
+    
   $scope.createData = function() {
     model.newCat({name: 'Mog', colour: 'tabby'});
     model.newCat({name: 'Owl', colour: 'striped'});
     model.newCat({name: 'Mille', colour: 'white'});
     model.newCat({name: 'Jafar', colour: 'burmese'});
   };
-  
   
 });

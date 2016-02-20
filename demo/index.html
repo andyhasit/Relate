@@ -56,10 +56,10 @@
         
         <div class="form-group row">
           <div class="col-sm-2">
-            <select class="form-control" ng-model="linkPerson" ng-options="item as item.name for item in people()"></select>
+            <select class="form-control" ng-model="linkPerson" ng-options="item as item.name for item in people() track by $index"></select>
           </div>
           <div class="col-sm-2">
-            <select class="form-control" ng-model="linkCat" ng-options="item as item.name for item in cats()"></select>
+            <select class="form-control" ng-model="linkCat" ng-options="item as item.name for item in cats() track by $index"></select>
           </div>
           <div class="col-sm-2">
             <button class="btn btn-primary" ng-click="linkCatToPerson()">Link</button>
@@ -73,7 +73,7 @@
           <div ng-repeat="person in people()">
             <h4>{{person.name}}</h4>
             <ul>
-              <li ng-repeat="cat in getPersonCats(person)">{{cat.name}}</li>            
+              <li ng-repeat="cat in getPersonCats(person) track by $index">{{cat.name}}</li>            
             </ul>
           </div>
         </div>

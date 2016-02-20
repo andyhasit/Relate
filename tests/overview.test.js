@@ -6,7 +6,7 @@ describe('Model', function() {
   
   var db, model, $rootScope, task1, task2, task3, task4, project1, project2;
   
-  beforeEach(inject(function( _RelateModel_, _$rootScope_, FakeDb, $q) {
+  beforeEach(inject(function( _model_, _$rootScope_, FakeDb, $q) {
     $rootScope = _$rootScope_;
     var db = new FakeDb();
     
@@ -25,7 +25,8 @@ describe('Model', function() {
       ['project_1', 'task_2']
     ]);
     
-    model = new _RelateModel_(db);
+    model = _model_;
+    model.initialize(db);
     model.defineCollection('project', ['name'], DummyFactory);
     model.defineCollection('task', ['name'], DummyFactory);
     model.defineRelationship({
@@ -34,7 +35,7 @@ describe('Model', function() {
       child:'task'
     });
     
-    model.onDataReady();
+    model.dataReady();
     $rootScope.$apply();
     
     task1 = model.getTask('task_1');
