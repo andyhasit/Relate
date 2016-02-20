@@ -1,24 +1,30 @@
 
 angular.module('Relate').service('model', function($q, Collection, ParentChildRelationship) {
-  var self = this;
+  
+  var self= this,
+      __db,
+      __collections = {},
+      __dbDocumentTypeLoaders = {},
+      __lastPromiseInQueue = $q.when(),
+      __relationshipDefinitionFunctions = {};
   
   self.initialize = function(db, query) {
-    self.__db = db;
+    __db = db;
   };
   
   var __dataReady;
-  self.dataReady = function ()  {var self = this;
+  self.dataReady = function (){
     if (__dataReady === undefined) {
       __dataReady = $q.defer();
-      self.__initializeModel().then( function () {
+      __initializeModel().then( function () {
         __dataReady.resolve();
       });
     }
     return __dataReady.promise;
   };
   
-  self.printInfo = function ()  {var self = this;
-    angular.forEach(self.__collections, function(collection) {
+  self.printInfo = function (){
+    angular.forEach(__collections, function(collection) {
       angular.forEach(collection.getAccessFunctionDefinitions(), function(accessFunc) {
         console.log('model.' + accessFunc.ModelFunctionName);
       });
@@ -27,16 +33,16 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
   
   /************* MODEL DEFINITION FUNCTIONS *************/
   
-  self.defineCollection = function(singleItemName, fieldNames, options)  {var self = this;
-    var collection = new Collection(self.__db, singleItemName, fieldNames, options);
-    self.__collections[collection.collectionName] = collection;
-    self.__registerDocumentTypeLoader(collection);
+  self.defineCollection = function(singleItemName, fieldNames, options){
+    var collection = new Collection(__db, singleItemName, fieldNames, options);
+    __collections[collection.collectionName] = collection;
+    __registerDocumentTypeLoader(collection);
     return collection;
   };
   
-  self.defineRelationship = function(options)  {var self = this;
+  self.defineRelationship = function(options){
     var relationshipType = options.type;
-    var fn = self.__relationshipDefinitionFunctions[relationshipType];
+    var fn = __relationshipDefinitionFunctions[relationshipType];
     if (typeof fn === 'function') {
       return fn.apply(self, [options]);
     } else {
@@ -44,18 +50,18 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     }
   };
   
-  self.__createParentChildRelationship = function(options)  {var self = this;
+  function __createParentChildRelationship(options){
     var parentCollectionName = options.parent;
     var childCollectionName = options.child;
-    var parentCollection = self.__collections[parentCollectionName];
-    var childCollection = self.__collections[childCollectionName];
-    var relationship = new ParentChildRelationship(self.__db, parentCollection, childCollection, options);
-    self.__collections[relationship.collectionName] = relationship;
-    self.__registerDocumentTypeLoader(relationship.itemParentRegister);
-    self.__registerDocumentTypeLoader(relationship.itemChildrenRegister);
+    var parentCollection = __collections[parentCollectionName];
+    var childCollection = __collections[childCollectionName];
+    var relationship = new ParentChildRelationship(__db, parentCollection, childCollection, options);
+    __collections[relationship.collectionName] = relationship;
+    __registerDocumentTypeLoader(relationship.itemParentRegister);
+    __registerDocumentTypeLoader(relationship.itemChildrenRegister);
     return relationship;
   };
-  
+  __relationshipDefinitionFunctions.parentChild = __createParentChildRelationship;
   
   /************* COLLECTION ACCESS FUNCTIONALITY ************
   
@@ -81,64 +87,63 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     
   */
   
-  self.__createAccessFunctions = function ()  {var self = this;
-    angular.forEach(self.__collections, function(collection) {
+  function __createAccessFunctions(){
+    angular.forEach(__collections, function(collection) {
       angular.forEach(collection.getAccessFunctionDefinitions(), function(accessFunc) {
         var func;
         if (accessFunc.queuedPromise) {
-          func = self.__getQueuedFunction(collection, accessFunc.collectionFunction);
+          func = __getQueuedFunction(collection, accessFunc.collectionFunction);
         } else {
-          func = self.__getNonQueuedFunction(collection, accessFunc.collectionFunction);
+          func = __getNonQueuedFunction(collection, accessFunc.collectionFunction);
         }
         self[accessFunc.ModelFunctionName] = func;
       });
     });
   };
   
-  self.__getNonQueuedFunction = function (collection, collectionFunction)  {var self = this;
+  function __getNonQueuedFunction(collection, collectionFunction){
     return function() {
       return collectionFunction.apply(collection, arguments);
     }
   };
   
-  self.__getQueuedFunction = function (collection, collectionFunction)  {var self = this;
+  function __getQueuedFunction(collection, collectionFunction){
     return function() {
       var originalArgs = arguments;
       var deferred = $q.defer();
-      self.__lastPromiseInQueue.then( function() {
-        self.__lastPromiseInQueue = collectionFunction.apply(collection, originalArgs);
-        self.__lastPromiseInQueue.then(function(result) {
+      __lastPromiseInQueue.then( function() {
+        __lastPromiseInQueue = collectionFunction.apply(collection, originalArgs);
+        __lastPromiseInQueue.then(function(result) {
           deferred.resolve(result);
         });
       });
       return deferred.promise;
     }
   };
-  
 
   /************* INITAL LOADING FUNCTIONALITY *************/
   
-  self.__registerDocumentTypeLoader = function(collection)  {var self = this;
+  function __registerDocumentTypeLoader(collection){
     var dbDocumentType = collection.dbDocumentType;
-    if (dbDocumentType in self.__dbDocumentTypeLoaders) {
-      var claimedBy = self.__dbDocumentTypeLoaders[dbDocumentType];
+    if (dbDocumentType in __dbDocumentTypeLoaders) {
+      var claimedBy = __dbDocumentTypeLoaders[dbDocumentType];
       throw 'More than one collection/relationship attempting to register dbDocumentType: "' + dbDocumentType + '".';
     } else {
-      self.__dbDocumentTypeLoaders[dbDocumentType] = collection;
+      __dbDocumentTypeLoaders[dbDocumentType] = collection;
     }
   };
   
-  self.__initializeModel = function ()  {var self = this;
+  function __initializeModel(){
     var defer = $q.defer();
-    var allDocsDefer = self.__db.allDocs({
+    var allDocsDefer = __db.allDocs({
       include_docs: true,
       attachments: false
     });
     allDocsDefer.then(function (result) {
       angular.forEach(result.rows, function(row){
-        self.__addDocumentToCollection(row.doc);
+        __addDocumentToCollection(row.doc);
       });
-      self.__createAccessFunctions();
+      __createAccessFunctions();
       defer.resolve();
     }).catch(function (err) {
       console.log(err);
@@ -146,10 +151,10 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     return defer.promise;
   };
   
-  self.__addDocumentToCollection = function (document)  {var self = this;
+  function __addDocumentToCollection(document){
     var dbDocumentType = document.type;
     if (dbDocumentType) {
-      var collection = self.__dbDocumentTypeLoaders[dbDocumentType];
+      var collection = __dbDocumentTypeLoaders[dbDocumentType];
       if (collection) {
         collection.loadDocumentFromDb(document, dbDocumentType);
       } else {
@@ -157,16 +162,9 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
         console.log('Could not load document \"' + document._id + '\" as type was not recognised (' + dbDocumentType + ')');
       }
     } else {
-      //self.__db.remove(document);
+      //__db.remove(document);
       throw('Could not load document \"' + document._id + '\" as it has no \"type\" field.');
     }
-  };
-  
-  self.__collections = {};
-  self.__dbDocumentTypeLoaders = {};
-  self.__lastPromiseInQueue = $q.when();
-  self.__relationshipDefinitionFunctions = {
-    parentChild: self.__createParentChildRelationship,
   };
   
 });

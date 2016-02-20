@@ -7,12 +7,13 @@ angular.module('Relate').factory('BaseCollection', function($q) {
   var BaseCollection = function()    {var self = this;
     self.__index = null;
     self.__db = null;
+    self.dbDocumentType = null;
   };
   var def = BaseCollection.prototype;
   
   def.__postAndLoad = function(document)    {var self = this;
     var defered = $q.defer();
-    document.type = self.typeIdentifier;
+    document.type = self.dbDocumentType;
     self.__db.post(document).then( function (result) {
       if (result.ok) {
         self.__db.get(result.id).then( function (docFromDb) {        

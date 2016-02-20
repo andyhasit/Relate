@@ -7,7 +7,6 @@ app.run(function(model) {
   //var db = new PouchDB('relate-demo');
   var db = new PouchDB('http://localhost:5984/kittens');
   
-  c.log(db);
   model.initialize(db);
   
   model.defineCollection('cat', ['name', 'colour']);
@@ -15,7 +14,8 @@ app.run(function(model) {
   model.defineRelationship({
     type:'parentChild',
     parent:'person', 
-    child:'cat'
+    child:'cat',
+    parentAlias: 'owner'
   });
   
 });
@@ -23,8 +23,27 @@ app.run(function(model) {
 app.controller('Ctrl', function($scope, model) {
   model.dataReady().then(function() {
     model.printInfo();
-    $scope.cats = model.allCats();
+    $scope.cats = model.allCats;
+    $scope.people = model.allPeople;
+    $scope.getPersonCats = model.getPersonCats;
   });
+  
+  $scope.newPerson = function() {
+    model.newPerson({name: $scope.newPersonName});
+  };
+  
+  $scope.newCat = function() {
+    model.newCat({name: $scope.newCatName});
+  };
+  
+  $scope.linkCatToPerson = function() {
+    c.log($scope.linkCat);
+    c.log($scope.linkPerson);
+    model.setCatOwner($scope.linkCat, $scope.linkPerson);
+  };
+  
+
+  
   
   $scope.createData = function() {
     model.newCat({name: 'Mog', colour: 'tabby'});
@@ -35,23 +54,3 @@ app.controller('Ctrl', function($scope, model) {
   
   
 });
-/*
-
-app.service('modelddd', function(RelateModel) {
-  //var db = new PouchDB('relate-demo');
-  var db = new PouchDB('http://localhost:5984/kittens');
-  RelateModel.call(this, db);
-  this.prototype = Object.create(RelateModel);
-  c.log(8888888);
-  c.log(db);
-  this.defineCollection('cat', ['name', 'colour']);
-  this.defineCollection('person', ['name', 'age'], {plural:'people'});
-  this.defineRelationship({
-    type:'parentChild',
-    parent:'person', 
-    child:'cat'
-  });
-  
-});
-
-*/

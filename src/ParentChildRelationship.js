@@ -40,6 +40,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
   };
   
   def.__setChildParent__ = function (childItem, parentItem)    {var self = this;
+    //TODO: assert they are of correct type?
     return $q.all([
       self.itemParentRegister.linkChildToParent(parentItem, childItem), 
       self.itemChildrenRegister.linkChildToParent(parentItem, childItem)
