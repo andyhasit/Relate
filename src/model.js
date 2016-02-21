@@ -43,7 +43,7 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
   
   /************* MODEL DEFINITION FUNCTIONS *************/
   
-  self.defineCollection = function(singleItemName, fieldNames, options){
+  self.collection = function(singleItemName, fieldNames, options){
     var collection = new Collection(__db, singleItemName, fieldNames, options);
     __collections[collection.collectionName] = collection;
     __registerDocumentTypeLoader(collection);
@@ -51,7 +51,7 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     return collection;
   };
   
-  self.defineRelationship = function(options){
+  self.join = function(options){
     var relationshipType = options.type;
     var fn = __relationshipDefinitionFunctions[relationshipType];
     if (typeof fn === 'function') {
@@ -96,7 +96,11 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     
   */
   self.save = function(item) {
-    self.__collections[item.type].saveItem(item);
+    self.__collections[item.type].save(item);
+  };
+  
+  self.delete = function(item) {
+    self.__collections[item.type].delete(item);
   };
   
   function __createAccessFunctions(collection){

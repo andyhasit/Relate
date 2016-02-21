@@ -26,7 +26,7 @@ angular.module('Relate').factory('ItemParentRegister', function(util, $q, BaseCo
     var indexEntry = self.__index[childItem._id];
     if (indexEntry) {
       if (angular.isUndefined(indexEntry.liveObject)) {
-        indexEntry.liveObject = self.__parentCollection.__get__(indexEntry.document.parentId) || null;
+        indexEntry.liveObject = self.__parentCollection.get(indexEntry.document.parentId) || null;
       }
       return indexEntry.liveObject;
     }

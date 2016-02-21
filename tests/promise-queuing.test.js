@@ -27,9 +27,9 @@ describe('Promise queuing', function() {
     
     model = _model_;
     model.initialize(db);
-    model.defineCollection('project', ['name'], DummyFactory);
-    model.defineCollection('task', ['name'], DummyFactory);
-    model.defineRelationship({
+    model.collection('project', ['name'], DummyFactory);
+    model.collection('task', ['name'], DummyFactory);
+    model.join({
       type:'parentChild',
       parent:'project', 
       child:'task'

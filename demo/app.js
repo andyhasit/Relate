@@ -12,16 +12,16 @@ Just define your model (collections + relationships) and Sneaker will:
 
 This mini demo shows how easily you can tap into the power of Sneaker.
 
-For a more involved example, including how you can wrap other backends, see the complex demo.
+For a more involved example, including wrapping other backends, see the complex demo.
 */
 
 var app = angular.module('app', ['Relate']);
 
 app.run(function(model) {
   /*
-  First create an instance of PouchDB. This one stores your data to a local database.
+  Let's create an instance of PouchDB. This one stores your data to a local database.
   You could equally point this to a CouchDB server URL, or set up
-  two way synchronising between your local database and a remote one.
+  two way synchronising between your local database and a remote one etc...
   */
   var db = new PouchDB('http://localhost:5984/kittens');
   
@@ -36,12 +36,14 @@ app.run(function(model) {
     'My name is ' + this.name + ' and I have ' + catCount + ' cats.');
   };
   
-  // Now let's define two collections and a relationship between them.
+  // Now let's define two collections:
   model.defineCollection('cat', ['name', 'color']);   
   model.defineCollection('person', ['name', 'age'], {
     plural:'people',       // optional - just changes findPersons() to findPeople()...
     constructor: Person,   // optional - every item will be initialized with "new Person()"
   });
+  
+  // And the relationship between them:
   model.defineRelationship({
     type:'parentChild',
     parent:'person', 
@@ -55,12 +57,12 @@ app.run(function(model) {
   
   You can now call the custom functions like:
   
-    model.newPerson({name: 'Alice', age: 9})  // This returns a promise, because it has to saves to the db
+    model.newPerson({name: 'Alice', age: 9})  // This returns a promise, because it has to save to the db
     model.delete(person)                      // As does this
     model.save(cat)                           // And any other call that makes changes to the db
     model.setCatOwner(cat)                    // Including setting relationships
-    model.getPersonCats(person)               // But this doesn't... It just returns a list of cats right away!
-    model.findCats({color: 'black'})          // As does this (you could also pass it a function)
+    model.getPersonCats(person)               // But this doesn't. It just returns a list of cats right away.
+    model.findCats({color: 'black'})          // As does this (note: you could also pass it a function)
   
   All the relationships are mapped bi-directionally in memory (but persisted uni-directionally in the db).
   

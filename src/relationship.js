@@ -14,7 +14,7 @@ Linking:
    addTag
    removeTag
    
-  model.defineRelationship({type: 'parentChild'... })
+  model.join({type: 'parentChild'... })
     r1 = parentChildRelationship(parent, child)
     r2 = childParentRelationship(parent, child)
     parentCollection.registerRelationship(r1)

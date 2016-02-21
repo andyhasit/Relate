@@ -18,9 +18,9 @@ describe('Flexible naming', function() {
   }
   
   it('two collections and a relationship', function() {
-    model.defineCollection('project', ['name']);
-    model.defineCollection('task', ['name']);
-    model.defineRelationship({
+    model.collection('project', ['name']);
+    model.collection('task', ['name']);
+    model.join({
       type:'parentChild',
       parent:'project', 
       child:'task'
@@ -36,9 +36,9 @@ describe('Flexible naming', function() {
   });
   
   it('two collections with plural name', function() {
-    model.defineCollection('project', ['name']);
-    model.defineCollection('person', ['name'], {plural: 'people'});
-    model.defineRelationship({
+    model.collection('project', ['name']);
+    model.collection('person', ['name'], {plural: 'people'});
+    model.join({
       type:'parentChild',
       parent:'project', 
       child:'person'
@@ -54,15 +54,15 @@ describe('Flexible naming', function() {
   });
   
   it('colletions with multiple parents different type', function() {
-    model.defineCollection('project', ['name']);
-    model.defineCollection('task', ['name']);
-    model.defineCollection('calendarDay', ['date']);
-    model.defineRelationship({
+    model.collection('project', ['name']);
+    model.collection('task', ['name']);
+    model.collection('calendarDay', ['date']);
+    model.join({
       type:'parentChild',
       parent:'project', 
       child:'task'
     });
-    model.defineRelationship({
+    model.join({
       type:'parentChild',
       parent:'calendarDay', 
       child:'task'
@@ -78,9 +78,9 @@ describe('Flexible naming', function() {
   });
   
   it('relationship with parent alias', function() {
-    model.defineCollection('task', ['name']);
-    model.defineCollection('calendarDay', ['date']);
-    model.defineRelationship({
+    model.collection('task', ['name']);
+    model.collection('calendarDay', ['date']);
+    model.join({
       type: 'parentChild',
       parent: 'calendarDay', 
       child: 'task',
@@ -95,9 +95,9 @@ describe('Flexible naming', function() {
   });
   
   it('relationship with child alias', function() {
-    model.defineCollection('task', ['name']);
-    model.defineCollection('calendarDay', ['date']);
-    model.defineRelationship({
+    model.collection('task', ['name']);
+    model.collection('calendarDay', ['date']);
+    model.join({
       type: 'parentChild',
       parent: 'calendarDay', 
       child: 'task',
@@ -111,36 +111,36 @@ describe('Flexible naming', function() {
   });
   
   it('colletions with multiple parents same type to fail without aliases', function() {
-    model.defineCollection('task', ['name']);
-    model.defineCollection('calendarDay', ['date']);
-    model.defineRelationship({
+    model.collection('task', ['name']);
+    model.collection('calendarDay', ['date']);
+    model.join({
       type:'parentChild',
       parent:'calendarDay', 
       child:'task'
     });
-    function defineRelationshipWithClash (){
-      model.defineRelationship({
+    function joinWithClash (){
+      model.join({
         type:'parentChild',
         parent:'calendarDay', 
         child:'task'
       });
     }        
-    expect(defineRelationshipWithClash).toThrow(
+    expect(joinWithClash).toThrow(
      'More than one collection/relationship attempting to register dbDocumentType: "lnk_parent_calendarDay_of_task".'
     );
   });
    
   it('colletions with multiple parents same type succeeds using aliases', function() {
-    model.defineCollection('task', ['name']);
-    model.defineCollection('calendarDay', ['date']);
-    model.defineRelationship({
+    model.collection('task', ['name']);
+    model.collection('calendarDay', ['date']);
+    model.join({
       type: 'parentChild',
       parent: 'calendarDay', 
       child: 'task',
       childAlias: 'actualTasks', 
       parentAlias: 'ActualDate'
     });
-    model.defineRelationship({
+    model.join({
       type: 'parentChild',
       parent: 'calendarDay',
       child: 'task',

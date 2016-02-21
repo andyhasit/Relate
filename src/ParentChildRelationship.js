@@ -39,7 +39,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     angular.forEach(self.__childCollection.__items, function(childItem) {
       var parentId = childItem[key];
       if (parentId) {
-        var parent = self.__parentCollection.__get__(parentId);
+        var parent = self.__parentCollection.get(parentId);
         self.__itemParent[childItem._id] = parent;
         self.__itemChildren[parentId].push(childItem);
       }
@@ -70,7 +70,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     }
     self.__itemParent[childItem._id] = parentItem;
     childItem[self.__keyName] = parentItemId; 
-    return self.__childCollection.saveItem(childItem);
+    return self.__childCollection.save(childItem);
   };
   
   def.respondToItemDeleted = function (item, collection)     {var self = this;
@@ -89,7 +89,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     var childDeletions = [];
     if (self.__cascadeDelete) {
       angular.forEach(self.getChildren(item), function (childItem) {
-        childDeletions.push(self.__childCollection.__delete__(childItem));
+        childDeletions.push(self.__childCollection.delete(childItem));
       });
     }
     //Note that __parentDeleteInProgress will be set to false before promises are all resolved (non critical)

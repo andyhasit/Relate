@@ -40,29 +40,28 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
         plural = cap(self.plural);
     function getFuncDef(action, pluralise, queuedPromise) {
       var name = pluralise? action + plural : action + singleName,
-          func = self['__' + action + '__'];
+          func = self[action];
       return util.createAccessFunctionDefinition(name, func, queuedPromise);
     }
     return [
       getFuncDef('new', false, true),
-      getFuncDef('delete', false, true),
       getFuncDef('get', false, false),
       getFuncDef('find', true, false),
       getFuncDef('all', true, false),
     ]
   };
   
-  def.__get__ = function(id)    {var self = this;
+  def.get = function(id)    {var self = this;
     return self.__items[id];
   };
   
-  def.__all__ = function()    {var self = this;
+  def.all = function()    {var self = this;
     return Object.keys(self.__items).map(function(i){
       return self.__items[i];
     });
   };
 
-  def.__find__ = function(query)    {var self = this;
+  def.find = function(query)    {var self = this;
     /*
     query can be:
       a function returning true or false
@@ -88,7 +87,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     return util.filterIndex(self.__items, test);
   };
   
-  def.__new__ = function(data)    {var self = this;
+  def.new = function(data)    {var self = this;
     var deferred = $q.defer();
     var doc = {};
     util.copyFields(data, doc, self.__fieldNames);
@@ -99,7 +98,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     return deferred.promise;
   };
 
-  def.saveItem = function(item)    {var self = this;
+  def.save = function(item)    {var self = this;
     var deferred = $q.defer();
     var doc = {};
     util.copyFields(item, doc, self.__fullFieldNames);
@@ -110,7 +109,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     return deferred.promise;
   };
 
-  def.__delete__ = function(item)    {var self = this;
+  def.delete = function(item)    {var self = this;
     var deferred = $q.defer();
     var childDeletions = [];
     angular.forEach(self.__relationships, function(relationship) {
