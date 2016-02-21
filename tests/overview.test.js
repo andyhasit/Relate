@@ -1,5 +1,5 @@
 
-describe('Model', function() {
+fdescribe('Model', function() {
   
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
@@ -10,19 +10,13 @@ describe('Model', function() {
     $rootScope = _$rootScope_;
     var db = new FakeDb();
     
-    db.setData('task', ['name'], [
-      ['task1'],
-      ['task2'],
+    db.setData('task', ['name', '__project'], [
+      ['task1', null],
+      ['task2', 'project_1'],
     ]);
-    db.setData('project', ['project'], [
+    db.setData('project', ['name'], [
       ['project1'],
       ['project2'],
-    ]);
-    db.setData('lnk_child_tasks_of_project', ['parentId', 'childrenIds'], [
-      ['project_1', ['task_2']]
-    ]);
-    db.setData('lnk_parent_project_of_task', ['parentId', 'childId'], [
-      ['project_1', 'task_2']
     ]);
     
     model = _model_;
@@ -34,7 +28,10 @@ describe('Model', function() {
       parent:'project', 
       child:'task'
     });
-    
+    /* Start conditions:
+      project1: [task2]
+      project2: []
+    */
     model.dataReady();
     $rootScope.$apply();
     
@@ -48,7 +45,6 @@ describe('Model', function() {
   it('creates accessor functions', function() {
     expect(typeof model.newTask).toEqual('function');
     expect(typeof model.findTasks).toEqual('function');
-    expect(typeof model.saveTask).toEqual('function');
     expect(typeof model.deleteTask).toEqual('function');
     expect(typeof model.getTaskProject).toEqual('function');
     expect(typeof model.getProjectTasks).toEqual('function');

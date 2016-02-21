@@ -19,13 +19,17 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
   util.inheritPrototype(Collection, BaseCollection);
   var def = Collection.prototype;
 
-  def.registerRelationship = function(relationship)    {var self = this;
+  def.registerRelationship = function(relationship, fieldName)    {var self = this;
     self.__relationships.push(relationship);
+    if (fieldName) {
+      self.__fullFieldNames.push(fieldName);
+    }
   };
 
   def.loadDocumentFromDb = function(doc)    {var self = this;
     var item = new self.__factoryFunction();
     util.copyFields(doc, item, self.__fullFieldNames);
+    item.type = self.itemName;
     self.__items[doc._id] = item;
     return item;
   };
@@ -41,7 +45,6 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     }
     return [
       getFuncDef('new', false, true),
-      getFuncDef('save', false, true),
       getFuncDef('delete', false, true),
       getFuncDef('get', false, false),
       getFuncDef('find', true, false),
@@ -96,7 +99,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     return deferred.promise;
   };
 
-  def.__save__ = function(item)    {var self = this;
+  def.saveItem = function(item)    {var self = this;
     var deferred = $q.defer();
     var doc = {};
     util.copyFields(item, doc, self.__fullFieldNames);

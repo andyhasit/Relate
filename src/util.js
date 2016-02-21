@@ -27,7 +27,6 @@ angular.module('Relate').service('util', function($q) {
   };
   
   self.removeFromArray = function(array, item) {
-    //will be unique in list.
     var index = array.indexOf(item);
     if (index > -1) {
       array.splice(index, 1);

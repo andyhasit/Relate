@@ -28,12 +28,15 @@ angular.module('PouchFake', []).factory('FakeDb', function($q) {
   */
   
   def.setData = function(type, fields, rows) {var self = this;
+    if (fields.indexOf('_id') >= 0) {
+      throw "Don't specify the id field, as new objects well seed at 1 and you may get clashes"
+    }
     angular.forEach(rows, function(row) {
       doc = {};
       angular.forEach(fields, function(field, key) {
         doc[field] = row[key];
       });
-      id = doc._id || self.__newId(type);
+      id = self.__newId(type);
       doc.type = type;
       doc._id = id;
       doc._rev = "1-" + id;

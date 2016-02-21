@@ -3,13 +3,21 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
   
   var self= this,
       __db,
+      __loadQuery,
       __collections = {},
+      __relationships = {},
       __dbDocumentTypeLoaders = {},
       __lastPromiseInQueue = $q.when(),
       __relationshipDefinitionFunctions = {};
   
   self.initialize = function(db, query) {
     __db = db;
+    __loadQuery = query || function() {
+      return __db.allDocs({
+        include_docs: true,
+        attachments: false
+      });
+    }
   };
   
   var __dataReady;
@@ -37,6 +45,7 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     var collection = new Collection(__db, singleItemName, fieldNames, options);
     __collections[collection.collectionName] = collection;
     __registerDocumentTypeLoader(collection);
+    __createAccessFunctions(collection);
     return collection;
   };
   
@@ -44,7 +53,9 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     var relationshipType = options.type;
     var fn = __relationshipDefinitionFunctions[relationshipType];
     if (typeof fn === 'function') {
-      return fn.apply(self, [options]);
+      relationship = fn.apply(self, [options]);
+      __createAccessFunctions(relationship);
+      __relationships[relationship.collectionName] = relationship;
     } else {
       throw '' + options.type +' is not a valid relationship type';
     }
@@ -55,11 +66,7 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     var childCollectionName = options.child;
     var parentCollection = __collections[parentCollectionName];
     var childCollection = __collections[childCollectionName];
-    var relationship = new ParentChildRelationship(__db, parentCollection, childCollection, options);
-    __collections[relationship.collectionName] = relationship;
-    __registerDocumentTypeLoader(relationship.itemParentRegister);
-    __registerDocumentTypeLoader(relationship.itemChildrenRegister);
-    return relationship;
+    return new ParentChildRelationship(__db, parentCollection, childCollection, options);
   };
   __relationshipDefinitionFunctions.parentChild = __createParentChildRelationship;
   
@@ -86,8 +93,23 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     });
     
   */
+  self.save = function(item) {
+    self.__collections[item.type].saveItem(item);
+  };
   
-  function __createAccessFunctions(){
+  function __createAccessFunctions(collection){
+    angular.forEach(collection.getAccessFunctionDefinitions(), function(accessFunc) {
+      var func;
+      if (accessFunc.queuedPromise) {
+        func = __getQueuedFunction(collection, accessFunc.collectionFunction);
+      } else {
+        func = __getNonQueuedFunction(collection, accessFunc.collectionFunction);
+      }
+      self[accessFunc.ModelFunctionName] = func;
+    });
+  };
+  
+  function __createAccessFunctionsOld(){
     angular.forEach(__collections, function(collection) {
       angular.forEach(collection.getAccessFunctionDefinitions(), function(accessFunc) {
         var func;
@@ -135,15 +157,12 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
   
   function __initializeModel(){
     var defer = $q.defer();
-    var allDocsDefer = __db.allDocs({
-      include_docs: true,
-      attachments: false
-    });
-    allDocsDefer.then(function (result) {
+    var loadQuery = __loadQuery();
+    loadQuery.then(function (result) {
       angular.forEach(result.rows, function(row){
         __addDocumentToCollection(row.doc);
       });
-      __createAccessFunctions();
+      __createLinks();
       defer.resolve();
     }).catch(function (err) {
       console.log(err);
@@ -162,10 +181,15 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
         console.log('Could not load document \"' + document._id + '\" as type was not recognised (' + dbDocumentType + ')');
       }
     } else {
-      //__db.remove(document);
-      throw('Could not load document \"' + document._id + '\" as it has no \"type\" field.');
+      console.log('Could not load document \"' + document._id + '\" as it has no \"type\" field.');
     }
   };
+  
+  function __createLinks() {
+    angular.forEach(__relationships, function(relationship) {
+      relationship.createLinks();
+    });
+  }
   
 });
 

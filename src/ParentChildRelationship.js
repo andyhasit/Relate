@@ -3,27 +3,30 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
   
   var ParentChildRelationship = function(db, parentCollection, childCollection, options)    {var self = this;
     var options = options || {};
-    self.__parentCollectionName = parentCollection.itemName;
-    self.__childCollectionName = childCollection.itemName;
+    self.__parentCollection = parentCollection;
+    self.__childCollection = childCollection;
     self.__childAlias = options.childAlias || childCollection.plural;
     self.__parentAlias = options.parentAlias || parentCollection.itemName;
-    self.collectionName = 'lnk_' + self.__parentAlias + '_' + self.__childAlias;
+    self.__keyName = '__' + self.__parentAlias;
+    //-self.collectionName = 'lnk_' + self.__parentAlias + '_' + self.__childAlias;
     self.__parentDeleteInProgress = new ValueRegister();
     self.__parentCollection = parentCollection;
     self.__childCollection = childCollection;
     self.__cascadeDelete = options.cascadeDelete || true;
-    self.itemParentRegister = new ItemParentRegister(db, parentCollection, childCollection, options);
-    self.itemChildrenRegister = new ItemChildrenRegister(db, parentCollection, childCollection, options);
+    //self.itemParentRegister = new ItemParentRegister(db, parentCollection, childCollection, options);
+    //self.itemChildrenRegister = new ItemChildrenRegister(db, parentCollection, childCollection, options);
+    self.__itemParent = {};
+    self.__itemChildren = {};
     parentCollection.registerRelationship(self);
-    childCollection.registerRelationship(self);
+    childCollection.registerRelationship(self, self.__keyName);
   };
   var def = ParentChildRelationship.prototype;
   
-  def.getAccessFunctionDefinitions = function()    {var self = this;
+  def.getAccessFunctionDefinitions = function()  {var self = this;
     var cap = util.capitalizeFirstLetter,
-        getParentFnName = 'get' + cap(self.__childCollectionName) + cap(self.__parentAlias),
-        getChildrenFnName = 'get' + cap(self.__parentCollectionName) + cap(self.__childAlias),
-        setChildParentFnName = 'set' + cap(self.__childCollectionName) + cap(self.__parentAlias);
+        getParentFnName = 'get' + cap(self.__childCollection.itemName) + cap(self.__parentAlias),
+        getChildrenFnName = 'get' + cap(self.__parentCollection.itemName) + cap(self.__childAlias),
+        setChildParentFnName = 'set' + cap(self.__childCollection.itemName) + cap(self.__parentAlias);
     return [
       util.createAccessFunctionDefinition(getParentFnName, self.__getParent__),
       util.createAccessFunctionDefinition(getChildrenFnName, self.__getChildren__),
@@ -31,20 +34,48 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     ];
   };
   
+  def.createLinks = function()  {var self = this;
+    var key = self.__keyName;
+    angular.forEach(self.__parentCollection.__items, function(parentItem) {
+      self.__itemChildren[parentItem._id] = [];
+    });
+    angular.forEach(self.__childCollection.__items, function(childItem) {
+      var parentId = childItem[key];
+      if (parentId) {
+        var parent = self.__parentCollection.__get__(parentId);
+        self.__itemParent[childItem._id] = parent;
+        self.__itemChildren[parentId].push(childItem);
+      }
+    });
+  }
+  
   def.__getParent__ = function (childItem)    {var self = this;
-    return self.itemParentRegister.getParent(childItem);
+    return self.__itemParent[childItem._id] || null;
+    //return self.itemParentRegister.getParent(childItem);
   };
   
   def.__getChildren__ = function (parentItem)    {var self = this;
-    return self.itemChildrenRegister.getChildren(parentItem);
+    return self.__itemChildren[parentItem._id];
+    //return self.itemChildrenRegister.getChildren(parentItem);
   };
   
   def.__setChildParent__ = function (childItem, parentItem)    {var self = this;
     //TODO: assert they are of correct type?
-    return $q.all([
-      self.itemParentRegister.linkChildToParent(parentItem, childItem), 
-      self.itemChildrenRegister.linkChildToParent(parentItem, childItem)
-    ]);
+    var oldParent = self.__itemParent[childItem._id],
+        parentItemId = parentItem? parentItem._id : null;
+    if (oldParent) {
+      util.removeFromArray(self.__itemChildren[oldParent._id], childItem);
+    }
+    if (parentItem) {
+      if (self.__itemChildren[parentItem._id] === undefined) {
+        self.__itemChildren[parentItem._id] = [childItem];
+      } else {
+        self.__itemChildren[parentItem._id].push(childItem);
+      }
+    }
+    self.__itemParent[childItem._id] = parentItem;
+    childItem[self.__keyName] = parentItemId; 
+    return self.__childCollection.saveItem(childItem);
   };
   
   def.respondToItemDeleted = function (item, collection)     {var self = this;
