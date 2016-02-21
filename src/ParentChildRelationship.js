@@ -1,5 +1,5 @@
 
-angular.module('Relate').factory('ParentChildRelationship', function($q, ItemParentRegister, ItemChildrenRegister, ValueRegister, util) {
+angular.module('Relate').factory('ParentChildRelationship', function($q, BaseContainer, ValueRegister, util) {
   
   var ParentChildRelationship = function(db, parentCollection, childCollection, options)    {var self = this;
     var options = options || {};
@@ -12,9 +12,12 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     self.__cascadeDelete = options.cascadeDelete || true;
     self.__itemParent = {};
     self.__itemChildren = {};
+    self.name = 'relationship_' + childCollection.itemName + '_as_' + self.__childAlias + '_' + 
+          parentCollection.itemName + '_as_' + self.__parentAlias; 
     parentCollection.registerRelationship(self);
     childCollection.registerRelationship(self, self.__keyName);
   };
+  util.inheritPrototype(ParentChildRelationship, BaseContainer);
   var def = ParentChildRelationship.prototype;
   
   def.getAccessFunctionDefinitions = function()  {var self = this;
@@ -31,7 +34,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     ];
   };
   
-  def.createLinks = function()  {var self = this;
+  def.postInitialLoading = function()  {var self = this;
     var key = self.__keyName;
     angular.forEach(self.__parentCollection.__items, function(parentItem) {
       self.__itemChildren[parentItem._id] = [];

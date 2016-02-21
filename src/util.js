@@ -11,7 +11,7 @@ angular.module('Relate').service('util', function($q) {
   self.createAccessFunctionDefinition = function(name, fn, queuedPromise) {
     return {
       ModelFunctionName: name,
-      collectionFunction: fn,
+      containerFunction: fn,
       queuedPromise: queuedPromise
     }
   };

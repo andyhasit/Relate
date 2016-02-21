@@ -1,5 +1,5 @@
 
-angular.module('Relate').factory('ManyToManyRelationship', function($q, ItemParentRegister, ItemChildrenRegister, ValueRegister, util) {
+angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseContainer, util) {
   
   var ManyToManyRelationship = function(db, leftCollection, rightCollection, options)    {var self = this;
     var options = options || {};
@@ -12,6 +12,7 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, ItemPare
       defaultDbDocumentTypeName += '_as_' + options.qualifier.toLowerCase();
     }
     self.dbDocumentType = options.dbDocumentType || defaultDbDocumentTypeName;
+    self.name = self.dbDocumentType;
     self.__db = db;
     self.__leftCollection = leftCollection;
     self.__rightCollection = rightCollection;
@@ -20,6 +21,7 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, ItemPare
     rightCollection.registerRelationship(self);
     leftCollection.registerRelationship(self);
   };
+  util.inheritPrototype(ManyToManyRelationship, BaseContainer);
   var def = ManyToManyRelationship.prototype;
   
   def.getAccessFunctionDefinitions = function()  {var self = this;
@@ -67,7 +69,7 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, ItemPare
     return true;
   };
   
-  def.createLinks = function()  {var self = this;
+  def.postInitialLoading = function()  {var self = this;
     //nothing, we now lazy load.
     /*
     function replaceIdsWithReferences (register, collection) {

@@ -1,10 +1,10 @@
 
-angular.module('Relate').factory('Collection', function(util, $q, BaseCollection) {
+angular.module('Relate').factory('Collection', function(util, $q, BaseContainer) {
   
   var Collection = function(db, singleItemName, fieldNames, options)    {var self = this;
     var options = options || {};
     self.itemName = singleItemName;
-    self.collectionName = singleItemName; //This is how a relationship references collection
+    self.name = singleItemName; //This is how a relationship references collection
     self.plural = options.plural || singleItemName + 's'
     self.dbDocumentType = options.dbDocumentType || singleItemName;
     self.__db = db;
@@ -16,7 +16,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseCollection
     self.__fullFieldNames.push('_id');
     self.__fullFieldNames.push('_rev');
   };
-  util.inheritPrototype(Collection, BaseCollection);
+  util.inheritPrototype(Collection, BaseContainer);
   var def = Collection.prototype;
 
   def.registerRelationship = function(relationship, fieldName)    {var self = this;

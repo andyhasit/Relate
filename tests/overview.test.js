@@ -23,11 +23,7 @@ describe('Model', function() {
     model.initialize(db);
     model.collection('project', ['name'], DummyFactory);
     model.collection('task', ['name'], DummyFactory);
-    model.join({
-      type:'parentChild',
-      parent:'project', 
-      child:'task'
-    });
+    model.join('project', 'task');
     /* Start conditions:
       project1: [task2]
       project2: []
@@ -45,7 +41,12 @@ describe('Model', function() {
   it('creates accessor functions', function() {
     expect(typeof model.newTask).toEqual('function');
     expect(typeof model.findTasks).toEqual('function');
-    expect(typeof model.deleteTask).toEqual('function');
+    expect(typeof model.getTask).toEqual('function');
+    expect(typeof model.allTasks).toEqual('function');
+    expect(typeof model.newProject).toEqual('function');
+    expect(typeof model.findProjects).toEqual('function');
+    expect(typeof model.getProject).toEqual('function');
+    expect(typeof model.allProjects).toEqual('function');
     expect(typeof model.getTaskProject).toEqual('function');
     expect(typeof model.getProjectTasks).toEqual('function');
   });

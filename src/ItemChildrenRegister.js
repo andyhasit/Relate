@@ -1,5 +1,5 @@
 
-angular.module('Relate').factory('ItemChildrenRegister', function(util, $q, BaseCollection) {
+angular.module('Relate').factory('ItemChildrenRegister', function(util, $q, BaseContainer) {
 
   var ItemChildrenRegister = function(db, parentCollection, childCollection, options)    {var self = this;
     var options = options || {};
@@ -13,7 +13,7 @@ angular.module('Relate').factory('ItemChildrenRegister', function(util, $q, Base
     self.__index = {};//format {parentId: {doc: Object, liveChildren: []}
     self.__reverseIndex = {};//format {childId: parentId}
   };
-  util.inheritPrototype(ItemChildrenRegister, BaseCollection);
+  util.inheritPrototype(ItemChildrenRegister, BaseContainer);
   var def = ItemChildrenRegister.prototype;
   
   def.loadDocumentFromDb = function(doc)     {var self = this;

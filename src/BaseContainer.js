@@ -1,17 +1,21 @@
 
-angular.module('Relate').factory('BaseCollection', function($q) {
+angular.module('Relate').factory('BaseContainer', function($q) {
   /*
   A collection has an internal index of the objects in the database.
   What it uses as keys and values is up to the derived class.
   */
-  var BaseCollection = function()    {var self = this;
+  var BaseContainer = function()    {var self = this;
     self.__index = null;
     self.__db = null;
     self.dbDocumentType = null;
   };
-  var def = BaseCollection.prototype;
+  var def = BaseContainer.prototype;
   
-  def.__postAndLoad = function(document)    {var self = this;
+  def.postInitialLoading = function() {
+    //override if container needs to do any post loading operations
+  };
+  
+  def.__postAndLoad = function(document)  {var self = this;
     var defered = $q.defer();
     document.type = self.dbDocumentType;
     self.__db.post(document).then( function (result) {
@@ -27,5 +31,5 @@ angular.module('Relate').factory('BaseCollection', function($q) {
     return defered.promise;
   };
   
-  return BaseCollection;
+  return BaseContainer;
 });
