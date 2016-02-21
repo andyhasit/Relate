@@ -18,12 +18,6 @@ describe('Promise queuing', function() {
       ['project1'],
       ['project2'],
     ]);
-    db.setData('lnk_child_tasks_of_project', ['parentId', 'childrenIds'], [
-      ['project_1', ['task_2']]
-    ]);
-    db.setData('lnk_parent_project_of_task', ['parentId', 'childId'], [
-      ['project_1', 'task_2']
-    ]);
     
     model = _model_;
     model.initialize(db);
