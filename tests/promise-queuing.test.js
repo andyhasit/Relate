@@ -4,7 +4,7 @@ describe('Promise queuing', function() {
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
   
-  var db, model, $rootScope, task1, task2, task3, task4, project1, project2;
+  var task1, task2, task3, task4, project1, project2;
   
   beforeEach(inject(function( _model_, _$rootScope_, FakeDb, _$q_) {
     $rootScope = _$rootScope_;
@@ -26,7 +26,7 @@ describe('Promise queuing', function() {
     model.join('project', 'task');
     
     model.dataReady();
-    $rootScope.$apply();
+    flush();
     
     task1 = model.getTask('task_1');
     task2 = model.getTask('task_2');
@@ -43,7 +43,7 @@ describe('Promise queuing', function() {
     task2.name = 'go skating';
     model.saveItem(task1);
     model.saveItem(task2);
-    $rootScope.$apply();
+    flush();
     expect(db.put.calls.count()).toEqual(2);
     expect(task1._rev).not.toEqual(oldRev1);
     expect(task2._rev).not.toEqual(oldRev2);
@@ -54,7 +54,7 @@ describe('Promise queuing', function() {
     model.newTask('test').then(function(result) {
       task3 = result;
     });
-    $rootScope.$apply();
+    flush();
     var oldRev1 = task1._rev;
     var oldRev2 = task2._rev;
     var oldRev3 = task3._rev;
@@ -82,7 +82,7 @@ describe('Promise queuing', function() {
     model.saveItem(task3);
     
     // Flush promises in the model, but not in the db
-    //$rootScope.$apply();
+    //flush();
     // Nothing should have changed, and only the first call should have gone through.
     expect(db.put.calls.count()).toEqual(1); 
     expect(task1._rev).toEqual(oldRev1);

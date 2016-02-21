@@ -4,8 +4,7 @@ describe('loading', function() {
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
   
-  var db, model, $rootScope, 
-      task1, task2, task3, task4, 
+  var task1, task2, task3, task4, 
       tag1, tag2, tag3, tag4,
       project1, project2, project3;
   
@@ -56,7 +55,7 @@ describe('loading', function() {
     */
     
     model.dataReady();
-    $rootScope.$apply();
+    flush();
     
     task1 = model.getTask('task_1');
     task2 = model.getTask('task_2');

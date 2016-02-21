@@ -4,7 +4,7 @@ describe('overview', function() {
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
   
-  var db, model, $rootScope, task1, task2, task3, task4, project1, project2;
+  var task1, task2, task3, task4, project1, project2;
   
   beforeEach(inject(function( _model_, _$rootScope_, FakeDb, $q) {
     $rootScope = _$rootScope_;
@@ -29,7 +29,7 @@ describe('overview', function() {
       project2: []
     */
     model.dataReady();
-    $rootScope.$apply();
+    flush();
     
     task1 = model.getTask('task_1');
     task2 = model.getTask('task_2');
@@ -87,7 +87,7 @@ describe('overview', function() {
     model.newTask({name: 'unicycle'}).then(function() {
       task3 = model.findTasks({name: 'unicycle'})[0];
     });
-    $rootScope.$apply();
+    flush();
     expect(task3.name).toEqual('unicycle');
     expect(model.findTasks({}).length).toEqual(3);
   });
@@ -98,7 +98,7 @@ describe('overview', function() {
     expect(model.getProjectTasks(project1)).toEqual([task2]);
     
     model.setTaskProject(task1, project1);
-    $rootScope.$apply();
+    flush();
     expect(model.getTaskProject(task1)).toEqual(project1);
     expect(model.getProjectTasks(project1)).toEqual([task2, task1]);
   });
@@ -108,10 +108,10 @@ describe('overview', function() {
     model.newProject({name: 'newProj'}).then(function(proj) {
       newProject = proj;
     });
-    $rootScope.$apply();
+    flush();
     expect(newProject.name).toEqual('newProj');
     model.setTaskProject(task2, newProject);
-    $rootScope.$apply();
+    flush();
     expect(model.getProjectTasks(project1)).toEqual([]);
     expect(model.getTaskProject(task2)).toEqual(newProject);
   });

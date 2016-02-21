@@ -54,7 +54,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
   };
   
   def.getChildren = function (parentItem)    {var self = this;
-    return self.__itemChildren[parentItem._id];
+    return self.__itemChildren[parentItem._id] || [];
   };
   
   def.setChildParent = function (childItem, parentItem)    {var self = this;

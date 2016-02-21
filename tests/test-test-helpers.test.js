@@ -22,7 +22,7 @@ describe('test test-helpers', function() {
     tagProjectJoin = model.join('project', 'tag', {type: 'manyToMany'});
     
     model.dataReady();
-    $rootScope.$apply();    
+    flush();    
   }));
   
   it('newItem works', function() {

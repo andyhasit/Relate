@@ -11,8 +11,12 @@ function newItem(type, data){
   model['new' + capitalizeFirstLetter(type)](data).then(function(result) {
     item = result;
   });
-  $rootScope.$apply();
+  flush();
   return item;
+}
+ 
+function flush() {
+  $rootScope.$apply();
 }
   
 pretty = function(obj) {

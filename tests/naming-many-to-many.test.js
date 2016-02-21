@@ -3,7 +3,6 @@ describe('naming many to many', function() {
   
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
-  var db, model, $rootScope;
   
   beforeEach(inject(function( _model_, _$rootScope_, FakeDb, $q) {
     $rootScope = _$rootScope_;
@@ -14,7 +13,7 @@ describe('naming many to many', function() {
   
   function ready() {
     model.dataReady();
-    $rootScope.$apply();
+    flush();
   }
   
   it('basic many to many', function() {
