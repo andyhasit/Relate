@@ -8,13 +8,8 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     self.__childAlias = options.childAlias || childCollection.plural;
     self.__parentAlias = options.parentAlias || parentCollection.itemName;
     self.__keyName = '__' + self.__parentAlias;
-    //-self.collectionName = 'lnk_' + self.__parentAlias + '_' + self.__childAlias;
     self.__parentDeleteInProgress = new ValueRegister();
-    self.__parentCollection = parentCollection;
-    self.__childCollection = childCollection;
     self.__cascadeDelete = options.cascadeDelete || true;
-    //self.itemParentRegister = new ItemParentRegister(db, parentCollection, childCollection, options);
-    //self.itemChildrenRegister = new ItemChildrenRegister(db, parentCollection, childCollection, options);
     self.__itemParent = {};
     self.__itemChildren = {};
     parentCollection.registerRelationship(self);
@@ -23,14 +18,15 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
   var def = ParentChildRelationship.prototype;
   
   def.getAccessFunctionDefinitions = function()  {var self = this;
-    var cap = util.capitalizeFirstLetter,
-        getParentFnName = 'get' + cap(self.__childCollection.itemName) + cap(self.__parentAlias);
-        getChildrenFnName = 'get' + cap(self.__parentCollection.itemName) + cap(self.__childAlias);
-        setChildParentFnName = 'set' + cap(self.__childCollection.itemName) + cap(self.__parentAlias);
+    var capitalize = util.capitalizeFirstLetter,
+        childName = capitalize(self.__childCollection.itemName),
+        childAlias = capitalize(self.__childAlias),
+        parentName = capitalize(self.__parentCollection.itemName),
+        parentAlias = capitalize(self.__parentAlias);
     return [
-      util.createAccessFunctionDefinition(getParentFnName, self.__getParent__),
-      util.createAccessFunctionDefinition(getChildrenFnName, self.__getChildren__),
-      util.createAccessFunctionDefinition(setChildParentFnName, self.__setChildParent__),
+      util.createAccessFunctionDefinition('get' + childName + parentAlias, self.getParent),
+      util.createAccessFunctionDefinition('get' + parentName + childAlias, self.getChildren),
+      util.createAccessFunctionDefinition('set' + childName + parentAlias, self.setChildParent),
     ];
   };
   
@@ -49,17 +45,15 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     });
   }
   
-  def.__getParent__ = function (childItem)    {var self = this;
+  def.getParent = function (childItem)    {var self = this;
     return self.__itemParent[childItem._id] || null;
-    //return self.itemParentRegister.getParent(childItem);
   };
   
-  def.__getChildren__ = function (parentItem)    {var self = this;
+  def.getChildren = function (parentItem)    {var self = this;
     return self.__itemChildren[parentItem._id];
-    //return self.itemChildrenRegister.getChildren(parentItem);
   };
   
-  def.__setChildParent__ = function (childItem, parentItem)    {var self = this;
+  def.setChildParent = function (childItem, parentItem)    {var self = this;
     //TODO: assert they are of correct type?
     var oldParent = self.__itemParent[childItem._id],
         parentItemId = parentItem? parentItem._id : null;
@@ -93,7 +87,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
     self.__parentDeleteInProgress.set(item, true);
     var childDeletions = [];
     if (self.__cascadeDelete) {
-      angular.forEach(self.__getChildren__(item), function (childItem) {
+      angular.forEach(self.getChildren(item), function (childItem) {
         childDeletions.push(self.__childCollection.__delete__(childItem));
       });
     }
@@ -109,7 +103,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
   def.__respondToChildDeleted = function (item)     {var self = this;
     var deferred = $q.defer(),
         childDeletions = [],
-        parentItem = self.__getParent__(item);
+        parentItem = self.getParent(item);
     childDeletions.push(self.itemParentRegister.respondToChildDeleted(item));
     /* This is to prevent many calls to unlinking children of a parent when the parent will 
     be deleted anyway. Just to save on db writes.

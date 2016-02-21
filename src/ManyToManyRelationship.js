@@ -15,8 +15,8 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, ItemPare
     self.__db = db;
     self.__rightCollection = rightCollection;
     self.__leftCollection = leftCollection;
-    self.__itemParent = {};
-    self.__itemChildren = {};
+    self.__rightLefts = {};
+    self.__leftRights = {};
     rightCollection.registerRelationship(self);
     leftCollection.registerRelationship(self);
   };
@@ -24,16 +24,32 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, ItemPare
   
   def.getAccessFunctionDefinitions = function()  {var self = this;
     var cap = util.capitalizeFirstLetter,
-        getLeftRightsFnName = 'get' + cap(self.__leftCollection.itemName) + cap(self.__rightCollection.plural) + self.__functionNameEnd;
-        getRightLeftsFnName = 'get' + cap(self.__rightCollection.itemName) + cap(self.__leftCollection.plural) + self.__functionNameEnd;
-        addLeftRightFnName = 'add' + cap(self.__rightCollection.itemName) + cap(self.__leftCollection.itemName) + self.__functionNameEnd;
-        removeLeftRightFnName = 'remove' + cap(self.__rightCollection.itemName) + cap(self.__leftCollection.itemName) + self.__functionNameEnd;
+        leftName = cap(self.__leftCollection.itemName),
+        leftPlural = cap(self.__leftCollection.plural),
+        rightName = cap(self.__rightCollection.itemName),
+        rightPlural = cap(self.__rightCollection.plural),
+        end = self.__functionNameEnd,
+        getLeftRightsFnName = 'get' + leftName + rightPlural + end,
+        getRightLeftsFnName = 'get' + rightName + leftPlural + end,
+        addLeftRightFnName = 'add' + leftName + rightName + end,
+        removeLeftRightFnName = 'remove' + leftName + rightName + end;
     return [
-      util.createAccessFunctionDefinition(getLeftRightsFnName, self.__getLeftRights__),
-      util.createAccessFunctionDefinition(getRightLeftsFnName, self.__getRightLefts__),
-      util.createAccessFunctionDefinition(addLeftRightFnName, self.__addLeftToRight__),
-      util.createAccessFunctionDefinition(removeLeftRightFnName, self.__removeLeftRight__),
+      util.createAccessFunctionDefinition(getLeftRightsFnName, self.getLeftRights),
+      util.createAccessFunctionDefinition(getRightLeftsFnName, self.getRightLefts),
+      util.createAccessFunctionDefinition(addLeftRightFnName, self.addLeftToRight),
+      util.createAccessFunctionDefinition(removeLeftRightFnName, self.removeLeftRight),
     ];
+  };
+  
+  def.loadDocumentFromDb = function(doc)  {var self = this;
+    doc.left
+    __rightLefts[
+    if (self.__index[document.childId]) {
+      throw "Found duplicate item parent link in database."
+    }
+    var newIndexEntry = {document: document};
+    self.__index[document.childId] = newIndexEntry;
+    return newIndexEntry;
   };
   
   def.createLinks = function()  {var self = this;
