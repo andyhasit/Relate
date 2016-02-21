@@ -1,4 +1,20 @@
-
+function capitalizeFirstLetter(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+  
+/*
+  Synchronously creates an item, to make writing tests cleaner.
+  Requires model and $rootScope to be global, which isn't a problem in a test environment.
+*/
+function newItem(type, data){
+  var item, data = data || {};
+  model['new' + capitalizeFirstLetter(type)](data).then(function(result) {
+    item = result;
+  });
+  $rootScope.$apply();
+  return item;
+}
+  
 pretty = function(obj) {
   console.log(JSON.stringify(obj, null, 2));
 };
@@ -18,19 +34,7 @@ angular.module('PouchFake', []).factory('FakeDb', function($q) {
     self.__idBank[type] ++;
     return type + '_' + self.__idBank[type];
   }
-  
-  /*
-  function copyObject(data) {//TODO: angular.copy();
-    var doc = {};
-    for (var prop in data) {
-      if (data.hasOwnProperty(prop)) {
-          doc[prop] = data[prop];
-      }
-    }
-    return doc;
-  }
-  */
-  
+
   def.setData = function(type, fields, rows) {var self = this;
     if (fields.indexOf('_id') >= 0) {
       throw "Don't specify the id field, as new objects well seed at 1 and you may get clashes"
@@ -156,6 +160,3 @@ angular.module('PouchFake', []).factory('FakeDb', function($q) {
   return FakeDb;
 });
 
-var DummyFactory = function () {
-};
-  

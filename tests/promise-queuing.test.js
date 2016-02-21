@@ -21,8 +21,8 @@ describe('Promise queuing', function() {
     
     model = _model_;
     model.initialize(db);
-    model.collection('project', ['name'], DummyFactory);
-    model.collection('task', ['name'], DummyFactory);
+    model.collection('project', ['name']);
+    model.collection('task', ['name']);
     model.join('project', 'task');
     
     model.dataReady();

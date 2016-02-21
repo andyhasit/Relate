@@ -1,5 +1,5 @@
 
-describe('loading', function() {
+xdescribe('referential integrity', function() {
   
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
@@ -9,19 +9,13 @@ describe('loading', function() {
       tag1, tag2, tag3, tag4,
       project1, project2, project3;
   
-  var Project = function() {};
-  Project.prototype.details = function() {
-    return 'this is ' + this.name;
-  };
-  
   beforeEach(inject(function( _model_, _$rootScope_, FakeDb, $q) {
     $rootScope = _$rootScope_;
     var db = new FakeDb();
     model = _model_;
     model.initialize(db);
     
-    
-    projectCollection = model.collection('project', ['name'], {constructorFunction: Project});
+    projectCollection = model.collection('project', ['name']);
     taskCollection = model.collection('task', ['name']);
     tagCollection = model.collection('tag', ['name']);
     taskProjectJoin = model.join('project', 'task');
@@ -50,7 +44,7 @@ describe('loading', function() {
       ['project_2', 'tag_2'],
       ['project_2', 'tag_3'],
     ]);
-      /*
+    /*
     project1 [task2, task3] [tag1, tag2]
     project2 [task4] [tag2, tag3]
     */
@@ -72,17 +66,50 @@ describe('loading', function() {
     
   }));
   
-  it('loaded items have expected properties', function() {
-    expect(task2._id).toEqual('task_2');
-    expect(task2._rev).toEqual('1-task_2');
-    expect(tag2.name).toEqual('home');
-    expect(project1.name).toEqual('project1');
+  function newProject(name){
+    var item;
+    model.newProject({name: name}).then(function(result) {
+      item = result;
+    });
+    $rootScope.$apply();
+    return item;
+  }
+  
+  
+  it('setting new parent', function() {
+    model.newProject({name: 'proj1'});
+    model.newProject({name: 'proj2'});
+    
+    proj1 = model.findProject({name: 'proj1'});
+    proj2 = model.findProject({name: 'proj2'});
+    
+    expect(model.getProjectTasks(project1)).toEqual([task2, task3]);
+    expect(model.getProjectTasks(project2)).toEqual([task4]);
+    expect(model.getProjectTasks(project3)).toEqual([]);
+    expect(model.getTaskProject(task1)).toEqual(null);
+    // Now make changes
+    $rootScope.$apply();
+    
   });
   
-  it('uses constructor function if provided', function() {
-    expect(project1).toEqual(jasmine.any(Project));
-    expect(project1.details()).toEqual('this is project1');
+  it('can link and unlink items at will', function() {
+    expect(model.getProjectTasks(project1)).toEqual([task2]);
+    model.newProject({name: 'newProj'}).then(function(proj) {
+      newProject = proj;
+    });
+    $rootScope.$apply();
+    expect(newProject.name).toEqual('newProj');
+    model.setTaskProject(task2, newProject);
+    $rootScope.$apply();
+    expect(model.getProjectTasks(project1)).toEqual([]);
+    expect(model.getTaskProject(task2)).toEqual(newProject);
   });
+  
+ 
+});
+
+/*
+
   
   it('sets up one to many relationships correctly', function() {
     expect(model.getProjectTasks(project1)).toEqual([task2, task3]);
@@ -104,4 +131,4 @@ describe('loading', function() {
     expect(model.getTagProjects(tag4)).toEqual([]);
   });
   
-});
+*/

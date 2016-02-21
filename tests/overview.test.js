@@ -1,5 +1,5 @@
 
-describe('Model', function() {
+describe('overview', function() {
   
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
@@ -21,8 +21,8 @@ describe('Model', function() {
     
     model = _model_;
     model.initialize(db);
-    model.collection('project', ['name'], DummyFactory);
-    model.collection('task', ['name'], DummyFactory);
+    model.collection('project', ['name']);
+    model.collection('task', ['name']);
     model.join('project', 'task');
     /* Start conditions:
       project1: [task2]

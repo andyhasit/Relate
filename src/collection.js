@@ -84,6 +84,9 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseContainer)
   };
   
   def.newItem = function(data)    {var self = this;
+    if(data === undefined) {
+      throw 'newItem expects an object as its first argument.'
+    }
     var deferred = $q.defer();
     var doc = {};
     util.copyFields(data, doc, self.__fieldNames);

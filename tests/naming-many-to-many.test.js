@@ -1,5 +1,5 @@
 
-describe('Flexible naming', function() {
+describe('naming many to many', function() {
   
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));

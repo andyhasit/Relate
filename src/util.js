@@ -4,8 +4,8 @@
 angular.module('Relate').service('util', function($q) {
   var self = this;
   
-  self.capitalizeFirstLetter = function(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
+  self.capitalizeFirstLetter = function(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
   };
   
   self.createAccessFunctionDefinition = function(name, fn, queuedPromise) {

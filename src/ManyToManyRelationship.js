@@ -63,7 +63,7 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseCont
     if (entry === undefined) {
       var docs = {};
       docs[id] = doc;
-      register[key] = {docs: docs};
+      register[key] = {docs: docs, items: []};
     } else {
       if (entry.docs[id]) {
         return false;
@@ -144,12 +144,12 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseCont
   def.__getInitialisedEntry = function (register, id)  {var self = this;
     var entry = register[id];
     if (entry === undefined) {
-      entry = {docs: {}}
+      entry = {docs: {}, items: []};
       register[id] = entry;
     } else {
-      if (entry.items === undefined) {
+      if (entry.items.length !== Object.keys(entry.docs).length) {
         var collection = (register === self.__leftRights)? self.__rightCollection : self.__leftCollection; 
-        entry.items = [];
+        entry.items.length = 0;
         angular.forEach(entry.docs, function(doc, id) {
           //TODO: what if item doesn't exist?
           var item = collection.getItem(id);
