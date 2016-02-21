@@ -24,8 +24,8 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
   
   def.getAccessFunctionDefinitions = function()  {var self = this;
     var cap = util.capitalizeFirstLetter,
-        getParentFnName = 'get' + cap(self.__childCollection.itemName) + cap(self.__parentAlias),
-        getChildrenFnName = 'get' + cap(self.__parentCollection.itemName) + cap(self.__childAlias),
+        getParentFnName = 'get' + cap(self.__childCollection.itemName) + cap(self.__parentAlias);
+        getChildrenFnName = 'get' + cap(self.__parentCollection.itemName) + cap(self.__childAlias);
         setChildParentFnName = 'set' + cap(self.__childCollection.itemName) + cap(self.__parentAlias);
     return [
       util.createAccessFunctionDefinition(getParentFnName, self.__getParent__),

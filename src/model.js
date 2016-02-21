@@ -1,5 +1,5 @@
 
-angular.module('Relate').service('model', function($q, Collection, ParentChildRelationship) {
+angular.module('Relate').service('model', function($q, Collection, ParentChildRelationship, ManyToManyRelationship) {
   
   var self= this,
       __db,
@@ -25,6 +25,8 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     if (__dataReady === undefined) {
       __dataReady = $q.defer();
       __initializeModel().then( function () {
+        m = new ManyToManyRelationship(__db, __collections['project'], __collections['task']);//, {qualifier: 'admin'}
+        c.log(m.getAccessFunctionDefinitions());
         __dataReady.resolve();
       });
     }
