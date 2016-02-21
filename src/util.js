@@ -19,11 +19,26 @@ angular.module('Relate').service('util', function($q) {
   self.arrayContains = function(array, item) {
     var l = array.length
     for(var i=0; i <= l; i++) {
-      if (item == array[i]) {
+      if (item === array[i]) {
         return true;
       }
     }
     return false;
+  };
+  
+  self.addUnique = function(array, item) {
+    if(!self.arrayContains(array, item)){
+      array.push(item);
+    }
+  }
+  
+  self.addAsItem = function(object, key, item) {
+    //Where object[key] = [items...]
+    if (object[key] === undefined) {
+      object[key] = [item];
+    } else {
+      object[key].push(item);
+    }
   };
   
   self.removeFromArray = function(array, item) {

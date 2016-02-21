@@ -13,10 +13,10 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, ItemPare
     }
     self.dbDocumentType = options.dbDocumentType || defaultDbDocumentTypeName;
     self.__db = db;
-    self.__rightCollection = rightCollection;
     self.__leftCollection = leftCollection;
-    self.__rightLefts = {};
+    self.__rightCollection = rightCollection;
     self.__leftRights = {};
+    self.__rightLefts = {};
     rightCollection.registerRelationship(self);
     leftCollection.registerRelationship(self);
   };
@@ -32,71 +32,110 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, ItemPare
         getLeftRightsFnName = 'get' + leftName + rightPlural + end,
         getRightLeftsFnName = 'get' + rightName + leftPlural + end,
         addLeftRightFnName = 'add' + leftName + rightName + end,
-        removeLeftRightFnName = 'remove' + leftName + rightName + end;
+        removeLeftRightFnName = 'remove' + leftName + rightName + end,
+        isLeftLinkedToRightFnName = 'is' + leftName + 'LinkedTo' + rightName + end;
     return [
       util.createAccessFunctionDefinition(getLeftRightsFnName, self.getLeftRights),
       util.createAccessFunctionDefinition(getRightLeftsFnName, self.getRightLefts),
       util.createAccessFunctionDefinition(addLeftRightFnName, self.addLeftToRight),
       util.createAccessFunctionDefinition(removeLeftRightFnName, self.removeLeftRight),
+      util.createAccessFunctionDefinition(isLeftLinkedToRightFnName, self.isLeftLinkedToRight)
     ];
   };
   
   def.loadDocumentFromDb = function(doc)  {var self = this;
-    doc.left
-    __rightLefts[
-    if (self.__index[document.childId]) {
-      throw "Found duplicate item parent link in database."
+    if (doc.right && doc.left && self.__updateOneRegisterWithDocument(self.__leftRights, doc.left, doc.right)) {
+      self.__updateOneRegisterWithDocument(self.__rightLefts, doc.right, doc.left);
+    } else {
+      self.__sendDocumentToReusePile(doc);
     }
-    var newIndexEntry = {document: document};
-    self.__index[document.childId] = newIndexEntry;
-    return newIndexEntry;
+  };
+  
+  //TODO: should this be nested in loadDocumentFromDb?
+  def.__updateOneRegisterWithDocument = function(register, key, id, doc)  {var self = this;
+    var entry = register[key];
+    if (entry === undefined) {
+      register[key] = {ids: [id], docs: [doc]};
+    } else {
+      if (entry.docs[id]) {
+        return false;
+      }
+      entry.ids.push(id);
+      entry.docs[id] = doc;
+    }
+    return true;
   };
   
   def.createLinks = function()  {var self = this;
-    var key = self.__keyName;
-    angular.forEach(self.__rightCollection.__items, function(rightItem) {
-      self.__itemChildren[rightItem._id] = [];
-    });
-    angular.forEach(self.__leftCollection.__items, function(leftItem) {
-      var rightId = leftItem[key];
-      if (rightId) {
-        var right = self.__rightCollection.__get__(rightId);
-        self.__itemParent[leftItem._id] = right;
-        self.__itemChildren[rightId].push(leftItem);
-      }
-    });
-  }
-  
-  def.__getParent__ = function (leftItem)    {var self = this;
-    return self.__itemParent[leftItem._id] || null;
-    //return self.itemParentRegister.getParent(leftItem);
+    //nothing, we now lazy load.
+    /*
+    function replaceIdsWithReferences (register, collection) {
+      angular.forEach(register, function(entry, key) {
+        angular.forEach(entry.ids, function(id, index) {
+          //TODO: discard doc if it doesn't exist.
+          entry.items[index] = collection.get(id);
+        });
+      });
+    }
+    replaceIdsWithReferences(self.__leftRights, self.__rightCollection);
+    replaceIdsWithReferences(self.__rightLefts, self.__leftCollection);
+    */
   };
   
-  def.__getChildren__ = function (rightItem)    {var self = this;
-    return self.__itemChildren[rightItem._id];
-    //return self.itemChildrenRegister.getChildren(rightItem);
+  def.getLeftRights = function (leftItem)  {var self = this;
+    return self.__getInitialisedEntry(self.__leftRights, leftItem._id).items;
   };
   
-  def.__setChildParent__ = function (leftItem, rightItem)    {var self = this;
-    //TODO: assert they are of correct type?
-    var oldParent = self.__itemParent[leftItem._id],
-        rightItemId = rightItem? rightItem._id : null;
-    if (oldParent) {
-      util.removeFromArray(self.__itemChildren[oldParent._id], leftItem);
+  def.getRightLefts = function (rightItem)  {var self = this;
+    return self.__getInitialisedEntry(self.__rightLefts, rightItem._id).items;
+  };
+  
+  //TODO: assert they are of correct type?
+  def.addLeftRight = function (leftItem, rightItem)    {var self = this;
+    if (self.isLeftLinkedToRight(leftItem, rightItem)) {
+      return $q.when();
+    } else {
+      var deferred = $q.defer();
+      self.__writeLinkToDatabase(leftItem, rightItem).then(function(){
+        //will have gone through loadDocumentFromDb so id and doc set, 
+        var leftEntry = self.__getInitialisedEntry(self.__leftRights, leftItem._id),
+            rightEntry = self.__getInitialisedEntry(self.__rightLefts, rightItem._id);
+        util.addUnique(leftEntry.items, rightItem);
+        util.addUnique(rightEntry.items, leftItem);
+        deferred.resolve()
+      });
+      return deferred.promise; 
+    };
+    
+    /*
+    Left and right may be absent from register.
+    Both registers will always be equal and complimentary:
+    {
+       p1: {items: [t6]}
+       p2: {items: [t4, t6]}
     }
-    if (rightItem) {
-      if (self.__itemChildren[rightItem._id] === undefined) {
-        self.__itemChildren[rightItem._id] = [leftItem];
-      } else {
-        self.__itemChildren[rightItem._id].push(leftItem);
-      }
+    {
+       t6: {items: [p1, p2]},
+       t4: {items: [p2]},
     }
-    self.__itemParent[leftItem._id] = rightItem;
-    leftItem[self.__keyName] = rightItemId; 
-    return self.__leftCollection.saveItem(leftItem);
+    
+    */
+  };
+  
+  def.removeLeftRight = function (leftItem, rightItem)    {var self = this;
+    //TODO...
+  };
+   
+  def.isLeftLinkedToRight = function (leftItem, rightItem)    {var self = this;
+    var leftEntry = self.__leftRights[leftItem._id];
+    if (leftEntry) {
+      return util.arrayContains(leftEntry.ids, rightItem.id);
+    }
+    return false;
   };
   
   def.respondToItemDeleted = function (item, collection)     {var self = this;
+  //TODO...
     if (collection === self.__rightCollection) {
       return self.__respondToParentDeleted(item);
     } else if (collection === self.__leftCollection) {
@@ -106,39 +145,40 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, ItemPare
     }
   };
   
-  def.__respondToParentDeleted = function (item)     {var self = this;
-    var deferred = $q.defer();
-    self.__rightDeleteInProgress.set(item, true);
-    var leftDeletions = [];
-    if (self.__cascadeDelete) {
-      angular.forEach(self.__getChildren__(item), function (leftItem) {
-        leftDeletions.push(self.__leftCollection.__delete__(leftItem));
-      });
-    }
-    //Note that __rightDeleteInProgress will be set to false before promises are all resolved (non critical)
-    self.__rightDeleteInProgress.set(item, false);
-    $q.all(leftDeletions).then(function() {
-      self.itemChildrenRegister.respondToParentDeleted(item);
-      deferred.resolve();
-    });
-    return deferred.promise;
+  def.__writeLinkToDatabase = function(leftItem, rightItem)  {var self = this;
+    // TODO if self.__docsForReuse length, then pop, update, put and loadFromDb. else: createAndLoad.
   };
   
-  def.__respondToChildDeleted = function (item)     {var self = this;
-    var deferred = $q.defer(),
-        leftDeletions = [],
-        rightItem = self.__getParent__(item);
-    leftDeletions.push(self.itemParentRegister.respondToChildDeleted(item));
-    /* This is to prevent many calls to unlinking leftren of a right when the right will 
-    be deleted anyway. Just to save on db writes.
-    */
-    if (rightItem && !self.__rightDeleteInProgress.get(rightItem)) {
-      leftDeletions.push(self.itemChildrenRegister.respondToChildDeleted(item));
+  def.__sendDocumentToReusePile = function(doc)  {var self = this;
+    self.__docsForReuse.push(doc);
+  };
+  
+  def.__getInitialisedEntry = function (register, id)  {var self = this;
+    var entry = register[id];
+    if (entry === undefined) {
+      entry = {ids: [], docs: [doc]}
+      register[id] = newEntry;
+    } else {
+      if (entry.items === undefined) {
+        var collection = (register === self.__leftRights)? self.__leftCollection : self.__rightCollection; 
+        entry.items = [];
+        angular.forEach(entry.ids, function(id, index) {
+          //TODO: discard doc if item doesn't exist?
+          entry.items.push(collection.get(id));
+        });
+      }
     }
-    $q.all(leftDeletions).then(function() {
-      deferred.resolve();
-    });
-    return deferred.promise;
+    return entry;
+  };
+  
+  def.__loadEntryItems = function(entry, collection) {
+    if (entry.items === undefined) {
+      entry.items = [];
+      angular.forEach(entry.ids, function(id, index) {
+        //TODO: discard doc if item doesn't exist.
+        entry.items[index] = collection.get(id);
+      });
+    }
   };
   
   return ManyToManyRelationship;
