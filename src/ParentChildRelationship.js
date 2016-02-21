@@ -19,14 +19,15 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, ItemPar
   
   def.getAccessFunctionDefinitions = function()  {var self = this;
     var capitalize = util.capitalizeFirstLetter,
+        buildFunc = util.createAccessFunctionDefinition,
         childName = capitalize(self.__childCollection.itemName),
         childAlias = capitalize(self.__childAlias),
         parentName = capitalize(self.__parentCollection.itemName),
         parentAlias = capitalize(self.__parentAlias);
     return [
-      util.createAccessFunctionDefinition('get' + childName + parentAlias, self.getParent),
-      util.createAccessFunctionDefinition('get' + parentName + childAlias, self.getChildren),
-      util.createAccessFunctionDefinition('set' + childName + parentAlias, self.setChildParent),
+      buildFunc('get' + childName + parentAlias, self.getParent),
+      buildFunc('get' + parentName + childAlias, self.getChildren),
+      buildFunc('set' + childName + parentAlias, self.setChildParent),
     ];
   };
   

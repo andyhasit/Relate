@@ -23,11 +23,12 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, ItemPare
   var def = ManyToManyRelationship.prototype;
   
   def.getAccessFunctionDefinitions = function()  {var self = this;
-    var cap = util.capitalizeFirstLetter,
-        leftName = cap(self.__leftCollection.itemName),
-        leftPlural = cap(self.__leftCollection.plural),
-        rightName = cap(self.__rightCollection.itemName),
-        rightPlural = cap(self.__rightCollection.plural),
+    var capitalize = util.capitalizeFirstLetter,
+        buildFunc = util.createAccessFunctionDefinition,
+        leftName = capitalize(self.__leftCollection.itemName),
+        leftPlural = capitalize(self.__leftCollection.plural),
+        rightName = capitalize(self.__rightCollection.itemName),
+        rightPlural = capitalize(self.__rightCollection.plural),
         end = self.__functionNameEnd,
         getLeftRightsFnName = 'get' + leftName + rightPlural + end,
         getRightLeftsFnName = 'get' + rightName + leftPlural + end,
@@ -35,11 +36,11 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, ItemPare
         removeLeftRightFnName = 'remove' + leftName + rightName + end,
         isLeftLinkedToRightFnName = 'is' + leftName + 'LinkedTo' + rightName + end;
     return [
-      util.createAccessFunctionDefinition(getLeftRightsFnName, self.getLeftRights),
-      util.createAccessFunctionDefinition(getRightLeftsFnName, self.getRightLefts),
-      util.createAccessFunctionDefinition(addLeftRightFnName, self.addLeftToRight),
-      util.createAccessFunctionDefinition(removeLeftRightFnName, self.removeLeftRight),
-      util.createAccessFunctionDefinition(isLeftLinkedToRightFnName, self.isLeftLinkedToRight)
+      buildFunc(getLeftRightsFnName, self.getLeftRights),
+      buildFunc(getRightLeftsFnName, self.getRightLefts),
+      buildFunc(addLeftRightFnName, self.addLeftToRight),
+      buildFunc(removeLeftRightFnName, self.removeLeftRight),
+      buildFunc(isLeftLinkedToRightFnName, self.isLeftLinkedToRight)
     ];
   };
   
@@ -163,22 +164,15 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, ItemPare
         var collection = (register === self.__leftRights)? self.__leftCollection : self.__rightCollection; 
         entry.items = [];
         angular.forEach(entry.ids, function(id, index) {
-          //TODO: discard doc if item doesn't exist?
-          entry.items.push(collection.get(id));
+          //TODO: what if item doesn't exist?
+          var item = collection.get(id);
+          if (item) {
+            entry.items.push(item);
+          }
         });
       }
     }
     return entry;
-  };
-  
-  def.__loadEntryItems = function(entry, collection) {
-    if (entry.items === undefined) {
-      entry.items = [];
-      angular.forEach(entry.ids, function(id, index) {
-        //TODO: discard doc if item doesn't exist.
-        entry.items[index] = collection.get(id);
-      });
-    }
   };
   
   return ManyToManyRelationship;
