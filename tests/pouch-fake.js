@@ -1,4 +1,8 @@
 
+pretty = function(obj) {
+  console.log(JSON.stringify(obj, null, 2));
+};
+
 angular.module('PouchFake', []).factory('FakeDb', function($q) {
   
   var FakeDb = function()  {var self = this;

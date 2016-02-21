@@ -38,51 +38,39 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseCont
         removeLeftRightFnName = 'remove' + leftName + rightName + end,
         isLeftLinkedToRightFnName = 'is' + leftName + 'LinkedTo' + rightName + end;
     return [
-      buildFunc(getLeftRightsFnName, self.getLeftRights),
-      buildFunc(getRightLeftsFnName, self.getRightLefts),
-      buildFunc(addLeftRightFnName, self.addLeftToRight),
-      buildFunc(removeLeftRightFnName, self.removeLeftRight),
-      buildFunc(isLeftLinkedToRightFnName, self.isLeftLinkedToRight)
+      buildFunc(getLeftRightsFnName, self.getLeftRights, false),
+      buildFunc(getRightLeftsFnName, self.getRightLefts, false),
+      buildFunc(addLeftRightFnName, self.addLeftToRight, true),
+      buildFunc(removeLeftRightFnName, self.removeLeftRight, true),
+      buildFunc(isLeftLinkedToRightFnName, self.isLeftLinkedToRight, false)
     ];
   };
   
   def.loadDocumentFromDb = function(doc)  {var self = this;
-    if (doc.right && doc.left && self.__updateOneRegisterWithDocument(self.__leftRights, doc.left, doc.right)) {
-      self.__updateOneRegisterWithDocument(self.__rightLefts, doc.right, doc.left);
+    //checks fields are there and first register succeeds...
+    if (doc.right && 
+        doc.left && 
+        self.__updateOneRegisterWithDocument(self.__leftRights, doc.left, doc.right, doc)
+        ){
+      self.__updateOneRegisterWithDocument(self.__rightLefts, doc.right, doc.left, doc);
     } else {
       self.__sendDocumentToReusePile(doc);
     }
   };
   
-  //TODO: should this be nested in loadDocumentFromDb?
   def.__updateOneRegisterWithDocument = function(register, key, id, doc)  {var self = this;
     var entry = register[key];
     if (entry === undefined) {
-      register[key] = {ids: [id], docs: [doc]};
+      var docs = {};
+      docs[id] = doc;
+      register[key] = {docs: docs};
     } else {
       if (entry.docs[id]) {
         return false;
       }
-      entry.ids.push(id);
       entry.docs[id] = doc;
     }
     return true;
-  };
-  
-  def.postInitialLoading = function()  {var self = this;
-    //nothing, we now lazy load.
-    /*
-    function replaceIdsWithReferences (register, collection) {
-      angular.forEach(register, function(entry, key) {
-        angular.forEach(entry.ids, function(id, index) {
-          //TODO: discard doc if it doesn't exist.
-          entry.items[index] = collection.get(id);
-        });
-      });
-    }
-    replaceIdsWithReferences(self.__leftRights, self.__rightCollection);
-    replaceIdsWithReferences(self.__rightLefts, self.__leftCollection);
-    */
   };
   
   def.getLeftRights = function (leftItem)  {var self = this;
@@ -130,11 +118,8 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseCont
   };
    
   def.isLeftLinkedToRight = function (leftItem, rightItem)    {var self = this;
-    var leftEntry = self.__leftRights[leftItem._id];
-    if (leftEntry) {
-      return util.arrayContains(leftEntry.ids, rightItem.id);
-    }
-    return false;
+    var leftEntry = self.__getInitialisedEntry(self.__leftRights, leftItem._id);
+    return util.arrayContains(leftEntry.items, rightItem.id);
   };
   
   def.respondToItemDeleted = function (item, collection)     {var self = this;
@@ -159,15 +144,15 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseCont
   def.__getInitialisedEntry = function (register, id)  {var self = this;
     var entry = register[id];
     if (entry === undefined) {
-      entry = {ids: [], docs: [doc]}
-      register[id] = newEntry;
+      entry = {docs: {}}
+      register[id] = entry;
     } else {
       if (entry.items === undefined) {
-        var collection = (register === self.__leftRights)? self.__leftCollection : self.__rightCollection; 
+        var collection = (register === self.__leftRights)? self.__rightCollection : self.__leftCollection; 
         entry.items = [];
-        angular.forEach(entry.ids, function(id, index) {
+        angular.forEach(entry.docs, function(doc, id) {
           //TODO: what if item doesn't exist?
-          var item = collection.get(id);
+          var item = collection.getItem(id);
           if (item) {
             entry.items.push(item);
           }

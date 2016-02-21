@@ -7,15 +7,15 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
     self.__childCollection = childCollection;
     self.__childAlias = options.childAlias || childCollection.plural;
     self.__parentAlias = options.parentAlias || parentCollection.itemName;
-    self.__keyName = '__' + self.__parentAlias;
     self.__parentDeleteInProgress = new ValueRegister();
     self.__cascadeDelete = options.cascadeDelete || true;
     self.__itemParent = {};
     self.__itemChildren = {};
     self.name = 'relationship_' + childCollection.itemName + '_as_' + self.__childAlias + '_' + 
-          parentCollection.itemName + '_as_' + self.__parentAlias; 
+          parentCollection.itemName + '_as_' + self.__parentAlias;
+    self.foreignKey = '__' + self.__parentAlias;
     parentCollection.registerRelationship(self);
-    childCollection.registerRelationship(self, self.__keyName);
+    childCollection.registerRelationship(self, self.foreignKey);
   };
   util.inheritPrototype(ParentChildRelationship, BaseContainer);
   var def = ParentChildRelationship.prototype;
@@ -28,21 +28,21 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
         parentName = capitalize(self.__parentCollection.itemName),
         parentAlias = capitalize(self.__parentAlias);
     return [
-      buildFunc('get' + childName + parentAlias, self.getParent),
-      buildFunc('get' + parentName + childAlias, self.getChildren),
-      buildFunc('set' + childName + parentAlias, self.setChildParent),
+      buildFunc('get' + childName + parentAlias, self.getParent, false),
+      buildFunc('get' + parentName + childAlias, self.getChildren, false),
+      buildFunc('set' + childName + parentAlias, self.setChildParent, true),
     ];
   };
   
   def.postInitialLoading = function()  {var self = this;
-    var key = self.__keyName;
+    var key = self.foreignKey;
     angular.forEach(self.__parentCollection.__items, function(parentItem) {
       self.__itemChildren[parentItem._id] = [];
     });
     angular.forEach(self.__childCollection.__items, function(childItem) {
       var parentId = childItem[key];
       if (parentId) {
-        var parent = self.__parentCollection.get(parentId);
+        var parent = self.__parentCollection.getItem(parentId);
         self.__itemParent[childItem._id] = parent;
         self.__itemChildren[parentId].push(childItem);
       }
@@ -72,8 +72,8 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
       }
     }
     self.__itemParent[childItem._id] = parentItem;
-    childItem[self.__keyName] = parentItemId; 
-    return self.__childCollection.save(childItem);
+    childItem[self.foreignKey] = parentItemId; 
+    return self.__childCollection.saveItem(childItem);
   };
   
   def.respondToItemDeleted = function (item, collection)     {var self = this;
@@ -92,7 +92,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
     var childDeletions = [];
     if (self.__cascadeDelete) {
       angular.forEach(self.getChildren(item), function (childItem) {
-        childDeletions.push(self.__childCollection.delete(childItem));
+        childDeletions.push(self.__childCollection.deleteItem(childItem));
       });
     }
     //Note that __parentDeleteInProgress will be set to false before promises are all resolved (non critical)
@@ -112,7 +112,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
     /* This is to prevent many calls to unlinking children of a parent when the parent will 
     be deleted anyway. Just to save on db writes.
     */
-    if (parentItem && !self.__parentDeleteInProgress.get(parentItem)) {
+    if (parentItem && !self.__parentDeleteInProgress.getItem(parentItem)) {
       childDeletions.push(self.itemChildrenRegister.respondToChildDeleted(item));
     }
     $q.all(childDeletions).then(function() {

@@ -58,8 +58,8 @@ app.run(function(model) {
   You can now call the custom functions like:
   
     model.newPerson({name: 'Alice', age: 9})  // This returns a promise, because it has to save to the db
-    model.delete(person)                      // As does this
-    model.save(cat)                           // And any other call that makes changes to the db
+    model.deleteItem(person)                      // As does this
+    model.saveItem(cat)                           // And any other call that makes changes to the db
     model.setCatOwner(cat)                    // Including setting relationships
     model.getPersonCats(person)               // But this doesn't. It just returns a list of cats right away.
     model.findCats({color: 'black'})          // As does this (note: you could also pass it a function)

@@ -121,7 +121,7 @@ angular.module('Relate').factory('ItemChildrenRegister', function(util, $q, Base
     if (!liveChildren) {
       var liveChildren = [];
       angular.forEach(indexEntry.doc.childrenIds, function (childId) {
-        liveChildren.push(self.__childCollection.get(childId));
+        liveChildren.push(self.__childCollection.getItem(childId));
       });
       indexEntry.liveChildren = liveChildren;
     }

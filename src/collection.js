@@ -8,7 +8,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseContainer)
     self.plural = options.plural || singleItemName + 's'
     self.dbDocumentType = options.dbDocumentType || singleItemName;
     self.__db = db;
-    self.__factoryFunction = options.factoryFunction || function(){};
+    self.__constructorFunction = options.constructorFunction || function(){};
     self.__items = {};
     self.__relationships = [];
     self.__fieldNames = fieldNames.slice();
@@ -27,7 +27,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseContainer)
   };
 
   def.loadDocumentFromDb = function(doc)    {var self = this;
-    var item = new self.__factoryFunction();
+    var item = new self.__constructorFunction();
     util.copyFields(doc, item, self.__fullFieldNames);
     item.type = self.itemName;
     self.__items[doc._id] = item;
@@ -35,33 +35,29 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseContainer)
   };
   
   def.getAccessFunctionDefinitions = function()    {var self = this;
-    var cap = util.capitalizeFirstLetter,
-        singleName = cap(self.itemName),
-        plural = cap(self.plural);
-    function getFuncDef(action, pluralise, queuedPromise) {
-      var name = pluralise? action + plural : action + singleName,
-          func = self[action];
-      return util.createAccessFunctionDefinition(name, func, queuedPromise);
-    }
+    var capitalize = util.capitalizeFirstLetter,
+        buildFunc = util.createAccessFunctionDefinition,
+        single = capitalize(self.itemName),
+        plural = capitalize(self.plural);
     return [
-      getFuncDef('new', false, true),
-      getFuncDef('get', false, false),
-      getFuncDef('find', true, false),
-      getFuncDef('all', true, false),
+      buildFunc('new' + single, self.newItem, true),
+      buildFunc('get' + single, self.getItem, false),
+      buildFunc('find' + plural, self.findItems, false),
+      buildFunc('all' + plural, self.allItems, false),
     ]
   };
   
-  def.get = function(id)    {var self = this;
+  def.getItem = function(id)    {var self = this;
     return self.__items[id];
   };
   
-  def.all = function()    {var self = this;
+  def.allItems = function()    {var self = this;
     return Object.keys(self.__items).map(function(i){
       return self.__items[i];
     });
   };
 
-  def.find = function(query)    {var self = this;
+  def.findItems = function(query)    {var self = this;
     /*
     query can be:
       a function returning true or false
@@ -87,7 +83,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseContainer)
     return util.filterIndex(self.__items, test);
   };
   
-  def.new = function(data)    {var self = this;
+  def.newItem = function(data)    {var self = this;
     var deferred = $q.defer();
     var doc = {};
     util.copyFields(data, doc, self.__fieldNames);
@@ -98,7 +94,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseContainer)
     return deferred.promise;
   };
 
-  def.save = function(item)    {var self = this;
+  def.saveItem = function(item)    {var self = this;
     var deferred = $q.defer();
     var doc = {};
     util.copyFields(item, doc, self.__fullFieldNames);
@@ -109,7 +105,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseContainer)
     return deferred.promise;
   };
 
-  def.delete = function(item)    {var self = this;
+  def.deleteItem = function(item)    {var self = this;
     var deferred = $q.defer();
     var childDeletions = [];
     angular.forEach(self.__relationships, function(relationship) {

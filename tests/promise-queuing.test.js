@@ -41,8 +41,8 @@ describe('Promise queuing', function() {
     var oldRev2 = task2._rev;
     task1.name = 'go surfing';
     task2.name = 'go skating';
-    model.save(task1);
-    model.save(task2);
+    model.saveItem(task1);
+    model.saveItem(task2);
     $rootScope.$apply();
     expect(db.put.calls.count()).toEqual(2);
     expect(task1._rev).not.toEqual(oldRev1);
@@ -77,9 +77,9 @@ describe('Promise queuing', function() {
       return defer.promise;
     });
     
-    model.save(task1);
-    model.save(task2);
-    model.save(task3);
+    model.saveItem(task1);
+    model.saveItem(task2);
+    model.saveItem(task3);
     
     // Flush promises in the model, but not in the db
     //$rootScope.$apply();

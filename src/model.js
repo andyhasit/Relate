@@ -43,6 +43,7 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
   self.collection = function(singleItemName, fieldNames, options){
     var container = new Collection(__db, singleItemName, fieldNames, options);
     __registerContainer(container);
+    return container;
   };
   
   self.join = function(firstCollection, secondCollection, options){
@@ -66,6 +67,7 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
       throw '"' + relationshipType + '" is not a valid relationship type';
     }
     __registerContainer(container);
+    return container;
   };
   
   __registerContainer = function(container) {
@@ -101,12 +103,12 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     });
     
   */
-  self.save = function(item) {
-    __containers[item.type].save(item);
+  self.saveItem = function(item) {
+    __containers[item.type].saveItem(item);
   };
   
-  self.delete = function(item) {
-    __containers[item.type].delete(item);
+  self.deleteItem = function(item) {
+    __containers[item.type].deleteItem(item);
   };
   
   function __createAccessFunctions(container){
