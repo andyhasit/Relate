@@ -20,7 +20,7 @@ angular.module('Relate').factory('BaseContainer', function($q) {
     document.type = self.dbDocumentType;
     self.__db.post(document).then( function (result) {
       if (result.ok) {
-        self.__db.get(result.id).then( function (docFromDb) {        
+        self.__db.get(result.id).then( function (docFromDb) {
           defered.resolve(self.loadDocumentFromDb(docFromDb));
         });
       } else {

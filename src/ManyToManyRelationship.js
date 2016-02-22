@@ -1,4 +1,17 @@
-
+    
+/*
+  Left and right may be absent from register.
+  Both registers will always be equal and complimentary:
+  {
+     p1: {items: [t6]}
+     p2: {items: [t4, t6]}
+  }
+  {
+     t6: {items: [p1, p2]},
+     t4: {items: [p2]},
+  }
+*/
+    
 angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseContainer, util) {
   
   var ManyToManyRelationship = function(db, leftCollection, rightCollection, options)    {var self = this;
@@ -18,6 +31,7 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseCont
     self.__rightCollection = rightCollection;
     self.__leftRights = {};
     self.__rightLefts = {};
+    self.__docsForReuse = [];
     rightCollection.registerRelationship(self);
     leftCollection.registerRelationship(self);
   };
@@ -40,21 +54,22 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseCont
     return [
       buildFunc(getLeftRightsFnName, self.getLeftRights, false),
       buildFunc(getRightLeftsFnName, self.getRightLefts, false),
-      buildFunc(addLeftRightFnName, self.addLeftToRight, true),
-      buildFunc(removeLeftRightFnName, self.removeLeftRight, true),
-      buildFunc(isLeftLinkedToRightFnName, self.isLeftLinkedToRight, false)
+      buildFunc(addLeftRightFnName, self.addLink, true),
+      buildFunc(removeLeftRightFnName, self.removeLink, true),
+      buildFunc(isLeftLinkedToRightFnName, self.isLinked, false)
     ];
   };
   
   def.loadDocumentFromDb = function(doc)  {var self = this;
-    //checks fields are there and first register succeeds...
     if (doc.right && 
         doc.left && 
         self.__updateOneRegisterWithDocument(self.__leftRights, doc.left, doc.right, doc)
         ){
       self.__updateOneRegisterWithDocument(self.__rightLefts, doc.right, doc.left, doc);
+      return true;
     } else {
       self.__sendDocumentToReusePile(doc);
+      return false;
     }
   };
   
@@ -82,13 +97,13 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseCont
   };
   
   //TODO: assert they are of correct type?
-  def.addLeftRight = function (leftItem, rightItem)    {var self = this;
-    if (self.isLeftLinkedToRight(leftItem, rightItem)) {
+  def.addLink = function (leftItem, rightItem)    {var self = this;
+    if (self.isLinked(leftItem, rightItem)) {
       return $q.when();
     } else {
       var deferred = $q.defer();
       self.__writeLinkToDatabase(leftItem, rightItem).then(function(){
-        //will have gone through loadDocumentFromDb so id and doc set, 
+        //will have gone through loadDocumentFromDb succesfully.
         var leftEntry = self.__getInitialisedEntry(self.__leftRights, leftItem._id),
             rightEntry = self.__getInitialisedEntry(self.__rightLefts, rightItem._id);
         util.addUnique(leftEntry.items, rightItem);
@@ -97,29 +112,17 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseCont
       });
       return deferred.promise; 
     };
-    
-    /*
-    Left and right may be absent from register.
-    Both registers will always be equal and complimentary:
-    {
-       p1: {items: [t6]}
-       p2: {items: [t4, t6]}
-    }
-    {
-       t6: {items: [p1, p2]},
-       t4: {items: [p2]},
-    }
-    
-    */
   };
   
-  def.removeLeftRight = function (leftItem, rightItem)    {var self = this;
-    //TODO...
+  def.removeLink = function (leftItem, rightItem)    {var self = this;
+    var deferred = $q.defer();
+    
+    return deferred.promise;
   };
    
-  def.isLeftLinkedToRight = function (leftItem, rightItem)    {var self = this;
+  def.isLinked = function (leftItem, rightItem)    {var self = this;
     var leftEntry = self.__getInitialisedEntry(self.__leftRights, leftItem._id);
-    return util.arrayContains(leftEntry.items, rightItem.id);
+    return util.arrayContains(leftEntry.items, rightItem);
   };
   
   def.respondToItemDeleted = function (item, collection)     {var self = this;
@@ -133,8 +136,34 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseCont
     }
   };
   
+  /*
+  Should only be called if sure that items are not linked. Will reuse a document if one is available.
+  */
   def.__writeLinkToDatabase = function(leftItem, rightItem)  {var self = this;
-    // TODO if self.__docsForReuse length, then pop, update, put and loadFromDb. else: createAndLoad.
+    var deferred = $q.defer(),
+        doc = self.__docsForReuse.pop();
+    function finish(succesfullyLoaded) {
+      if (succesfullyLoaded) {
+        c.log(888)
+        deferred.resolve();
+      } else {
+        throw 'ManyToManyRelationship.__writeLinkToDatabase failed to load document. This should not have happened.'
+      }
+    }
+    if (doc) {
+      doc.left = leftItem._id;
+      doc.right = rightItem._id;
+      self.__db.put(doc).then(function (result) {
+        doc._rev = result.rev;
+        finish(self.loadDocumentFromDb(doc));        
+      });
+    } else {
+      doc = {left: leftItem._id, right:rightItem._id};
+      self.__postAndLoad(doc).then(function (result) {
+        finish(result);
+      });
+    }
+    return deferred.promise;
   };
   
   def.__sendDocumentToReusePile = function(doc)  {var self = this;

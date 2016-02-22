@@ -16,19 +16,18 @@ angular.module('Relate').service('util', function($q) {
     }
   };
     
-  self.arrayContains = function(array, item) {
-    var l = array.length
-    for(var i=0; i <= l; i++) {
-      if (item === array[i]) {
+  self.arrayContains = function(myArray, item) {
+    for (var i = 0, len = myArray.length; i < len; i++) {
+      if (item === myArray[i]) {
         return true;
       }
     }
     return false;
   };
   
-  self.addUnique = function(array, item) {
-    if(!self.arrayContains(array, item)){
-      array.push(item);
+  self.addUnique = function(myArray, item) {
+    if(!self.arrayContains(myArray, item)){
+      myArray.push(item);
     }
   }
   
@@ -41,10 +40,10 @@ angular.module('Relate').service('util', function($q) {
     }
   };
   
-  self.removeFromArray = function(array, item) {
-    var index = array.indexOf(item);
+  self.removeFromArray = function(myArray, item) {
+    var index = myArray.indexOf(item);
     if (index > -1) {
-      array.splice(index, 1);
+      myArray.splice(index, 1);
     }
   };
   
