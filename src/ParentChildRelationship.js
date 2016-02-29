@@ -1,6 +1,6 @@
 
 angular.module('Relate').factory('ParentChildRelationship', function($q, BaseContainer, ValueRegister, util) {
-  
+
   var ParentChildRelationship = function(db, parentCollection, childCollection, options)    {var self = this;
     var options = options || {};
     self.__parentCollection = parentCollection;
@@ -8,10 +8,10 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
     self.__childAlias = options.childAlias || childCollection.plural;
     self.__parentAlias = options.parentAlias || parentCollection.itemName;
     self.__parentDeleteInProgress = new ValueRegister();
-    self.__cascadeDelete = options.cascadeDelete || true;
+    self.__cascadeDelete = (options.cascadeDelete === undefined)? true : options.cascadeDelete;
     self.__itemParent = {};
     self.__itemChildren = {};
-    self.name = 'relationship_' + childCollection.itemName + '_as_' + self.__childAlias + '_' + 
+    self.name = 'relationship_' + childCollection.itemName + '_as_' + self.__childAlias + '_' +
           parentCollection.itemName + '_as_' + self.__parentAlias;
     self.foreignKey = '__' + self.__parentAlias;
     parentCollection.registerRelationship(self);
@@ -19,7 +19,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
   };
   util.inheritPrototype(ParentChildRelationship, BaseContainer);
   var def = ParentChildRelationship.prototype;
-  
+
   def.getAccessFunctionDefinitions = function()  {var self = this;
     var capitalize = util.capitalizeFirstLetter,
         buildFunc = util.createAccessFunctionDefinition,
@@ -33,7 +33,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
       buildFunc('set' + childName + parentAlias, self.setChildParent, true),
     ];
   };
-  
+
   def.postInitialLoading = function()  {var self = this;
     var key = self.foreignKey;
     angular.forEach(self.__parentCollection.__items, function(parentItem) {
@@ -48,19 +48,19 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
       }
     });
   }
-  
+
   def.getParent = function (childItem)    {var self = this;
     return self.__itemParent[childItem._id] || null;
   };
-  
+
   def.getChildren = function (parentItem)    {var self = this;
     return self.__itemChildren[parentItem._id] || [];
   };
-  
+
   def.setChildParent = function (childItem, parentItem)    {var self = this;
     //TODO: assert they are of correct type?
-    var oldParent = self.__itemParent[childItem._id],
-        parentItemId = parentItem? parentItem._id : null;
+    var oldParent = self.__itemParent[childItem._id];
+    var parentItemId = parentItem? parentItem._id : null;
     if (oldParent) {
       util.removeFromArray(self.__itemChildren[oldParent._id], childItem);
     }
@@ -72,10 +72,10 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
       }
     }
     self.__itemParent[childItem._id] = parentItem;
-    childItem[self.foreignKey] = parentItemId; 
+    childItem[self.foreignKey] = parentItemId;
     return self.__childCollection.saveItem(childItem);
   };
-  
+
   def.respondToItemDeleted = function (item, collection)     {var self = this;
     if (collection === self.__parentCollection) {
       return self.__respondToParentDeleted(item);
@@ -85,41 +85,60 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
       throw "Called respondToItemDeleted from wrong collection."
     }
   };
-  
-  def.__respondToParentDeleted = function (item)     {var self = this;
+
+  def.__respondToParentDeleted = function (parentItem)     {var self = this;
     var deferred = $q.defer();
-    self.__parentDeleteInProgress.set(item, true);
-    var childDeletions = [];
-    if (self.__cascadeDelete) {
-      angular.forEach(self.getChildren(item), function (childItem) {
-        childDeletions.push(self.__childCollection.deleteItem(childItem));
-      });
-    }
+    var cascadedActionPromises = [];
+c.log(self.__cascadeDelete);
+    var action = (self.__cascadeDelete === true)?
+        function(childItem) {return self.__childCollection.deleteItem(childItem)} :
+        function(childItem) {return self.setChildParent(childItem, null)} ;
+    //self.__parentDeleteInProgress.set(item, true);
+    cascadedActionPromises = self.getChildren(parentItem).map(function (childItem) {return action(childItem)});
+    c.log(cascadedActionPromises);
+    /*
+    angular.forEach(self.getChildren(parentItem), function (childItem) {
+      c.log('Found child ' + childItem._id);
+      d = action(childItem);
+      d.then(function(r) {c.log('22' + r)}, function(r) {c.log('55' + r)});
+      c.log(d);
+      //cascadedActionPromises.push(action(childItem));
+    });
+    */
     //Note that __parentDeleteInProgress will be set to false before promises are all resolved (non critical)
-    self.__parentDeleteInProgress.set(item, false);
-    $q.all(childDeletions).then(function() {
-      self.itemChildrenRegister.respondToParentDeleted(item);
+    //self.__parentDeleteInProgress.set(item, false);
+    $q.all(cascadedActionPromises).then(function() {
+      delete self.__itemChildren[parentItem._id];
       deferred.resolve();
     });
     return deferred.promise;
   };
-  
-  def.__respondToChildDeleted = function (item)     {var self = this;
-    var deferred = $q.defer(),
-        childDeletions = [],
-        parentItem = self.getParent(item);
+
+  def.__respondToChildDeleted = function (childItem)     {var self = this;
+    c.log('del child ' + childItem._id);
+    //var deferred = $q.defer();
+    var parentItem = self.getParent(childItem);
+    if (parentItem) {
+      util.removeFromArray(self.__itemChildren[parentItem._id], childItem);
+    }
+    delete self.__itemParent[childItem._id];
+    return $q.when();
+    /*
+    var childDeletions = [];
     childDeletions.push(self.itemParentRegister.respondToChildDeleted(item));
-    /* This is to prevent many calls to unlinking children of a parent when the parent will 
+    This is to prevent many calls to unlinking children of a parent when the parent will
     be deleted anyway. Just to save on db writes.
-    */
+
     if (parentItem && !self.__parentDeleteInProgress.getItem(parentItem)) {
       childDeletions.push(self.itemChildrenRegister.respondToChildDeleted(item));
     }
     $q.all(childDeletions).then(function() {
       deferred.resolve();
     });
+    */
+    deferred.resolve();
     return deferred.promise;
   };
-  
+
   return ParentChildRelationship;
 });

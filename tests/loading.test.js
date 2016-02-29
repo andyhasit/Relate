@@ -18,8 +18,8 @@ describe('loading', function() {
     var db = new FakeDb();
     model = _model_;
     model.initialize(db);
-    
-    
+        
+        
     projectCollection = model.collection('project', ['name'], {constructorFunction: Project});
     taskCollection = model.collection('task', ['name']);
     tagCollection = model.collection('tag', ['name']);

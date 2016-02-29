@@ -1,7 +1,7 @@
 
 angular.module('Relate').service('model', function($q, Collection, ParentChildRelationship, ManyToManyRelationship) {
   
-  var self= this,
+  var self = this,
       __db,
       __loadQuery,
       __containers = {},

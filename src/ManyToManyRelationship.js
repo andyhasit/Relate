@@ -115,12 +115,24 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseCont
   };
   
   def.removeLink = function (leftItem, rightItem)    {var self = this;
-    var deferred = $q.defer();
-    
-    return deferred.promise;
+    var leftEntry = self.__getInitialisedEntry(self.__leftRights, leftItem._id);
+    var rightEntry = self.__getInitialisedEntry(self.__rightLefts, rightItem._id);
+    var doc1 = self.__removeFromEntry(leftEntry, rightItem);
+    var doc2 = self.__removeFromEntry(rightEntry, leftItem);
+    if (doc1 !== doc2) {
+      throw "This is strange..."
+    }
+    return self.__db.remove(doc1);
   };
+  
+  def.__removeFromEntry = function(entry, item)  {var self = this;
+    var doc = entry.docs[item._id];
+    util.removeFromArray(entry.items, item);
+    delete entry.docs[item._id];
+    return doc;
+  }
    
-  def.isLinked = function (leftItem, rightItem)    {var self = this;
+  def.isLinked = function (leftItem, rightItem)  {var self = this;
     var leftEntry = self.__getInitialisedEntry(self.__leftRights, leftItem._id);
     return util.arrayContains(leftEntry.items, rightItem);
   };
@@ -144,7 +156,6 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseCont
         doc = self.__docsForReuse.pop();
     function finish(succesfullyLoaded) {
       if (succesfullyLoaded) {
-        c.log(888)
         deferred.resolve();
       } else {
         throw 'ManyToManyRelationship.__writeLinkToDatabase failed to load document. This should not have happened.'
