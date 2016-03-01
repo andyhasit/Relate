@@ -109,18 +109,15 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseContainer)
   };
 
   def.deleteItem = function(item)    {var self = this;
-    var deferred = $q.defer();
-    var childDeletions = [];
-    angular.forEach(self.__relationships, function(relationship) {
-      childDeletions.push(relationship.respondToItemDeleted(item, self));
+    var childDeletions = self.__relationships.map(function(relationship) {
+      return relationship.respondToItemDeleted(item, self);
     });
-    $q.all(childDeletions).then(function() {
+    return $q.all(childDeletions).then(function() {
       self.__db.remove(item).then(function (result) {
         delete self.__items[item._id];
         deferred.resolve();
       }, util.promiseFailed);
     }, util.promiseFailed);
-    return deferred.promise;
   };
 
   return Collection;

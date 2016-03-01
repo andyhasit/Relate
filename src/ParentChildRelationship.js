@@ -3,6 +3,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
 
   var ParentChildRelationship = function(db, parentCollection, childCollection, options)    {var self = this;
     var options = options || {};
+    self.__db = db;
     self.__parentCollection = parentCollection;
     self.__childCollection = childCollection;
     self.__childAlias = options.childAlias || childCollection.plural;
@@ -86,12 +87,15 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
     }
   };
 
-  def.__respondToParentDeletedTemp = function (parentItem)     {var self = this;
+  def.__respondToParentDeleted = function (parentItem)     {var self = this;
     var action = (self.__cascadeDelete)?
         function(childItem) {return self.__childCollection.deleteItem(childItem)} :
         function(childItem) {return self.setChildParent(childItem, null)};
     // works with
     //action = function(childItem){return $q.when($q.when($q.when(childItem._id)))};
+    action = function(childItem) {
+      return self.__childCollection.deleteItem(childItem);
+    }
     var children = self.getChildren(parentItem);
     return $q.all(children.map(action)).then(function() {
       delete self.__itemChildren[parentItem._id];
@@ -99,7 +103,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
     }, util.promiseFailed);
   };
 
-  def.__respondToParentDeleted = function (parentItem)     {var self = this;
+  def.__respondToParentDeletedTemp = function (parentItem)     {var self = this;
     var deferred = $q.defer();
     var action = (self.__cascadeDelete)?
         function(childItem) {return self.__childCollection.deleteItem(childItem)} :
@@ -150,13 +154,16 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
   //self.__parentDeleteInProgress.set(item, true);
 
   def.__respondToChildDeleted = function (childItem)     {var self = this;
+    //return $q.when(true);
     //var deferred = $q.defer();
     var parentItem = self.getParent(childItem);
+                                                          c.log(childItem._id)
     if (parentItem) {
+      c.log(parentItem);
       util.removeFromArray(self.__itemChildren[parentItem._id], childItem);
     }
     delete self.__itemParent[childItem._id];
-    return $q.when();
+    return $q.when(true);
     /*
     var childDeletions = [];
     childDeletions.push(self.itemParentRegister.respondToChildDeleted(item));

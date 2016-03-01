@@ -32,7 +32,7 @@ describe('deleting', function() {
 
   });
 
-  fit('can set and change parent with one to many', function() {
+  it('can set and change parent with one to many', function() {
 
     projectCollection = model.collection('project', ['name']);
     taskCollection = model.collection('task', ['name']);
@@ -45,27 +45,26 @@ describe('deleting', function() {
     task1 = newItem('task');
     task2 = newItem('task');
     task3 = newItem('task');
-    task4 = newItem('task');
-    task5 = newItem('task');
-    task6 = newItem('task');
+    //task4 = newItem('task');
+    //task5 = newItem('task');
+    //task6 = newItem('task');
     model.setTaskProject(task1, project2);
     model.setTaskProject(task2, project2);
     model.setTaskProject(task3, project2);
-    model.setTaskProject(task4, project2);
-    model.setTaskProject(task5, project2);
-    model.setTaskProject(task6, project2);
+    //model.setTaskProject(task4, project2);
+    //model.setTaskProject(task5, project2);
+    //model.setTaskProject(task6, project2);
     flush();
     $rootScope.$apply();
-    //expect(model.getProjectTasks(project2)).toEqual([task1, task2, task3]);
-    //expect(model.allTasks()).toEqual([task1, task2, task3]);
-    /*
+    expect(model.getProjectTasks(project2)).toEqual([task1, task2, task3]);
+    expect(model.allTasks()).toEqual([task1, task2, task3]);
+
     model.deleteItem(project1);
     flush();
     expect(model.allProjects()).toEqual([project2]);
-    expect(model.allTasks()).toEqual([task1, task2]);
-    */
+    expect(model.allTasks()).toEqual([task1, task2, task3]);
     model.deleteItem(project2);
-    flush();
+
     flush();
     expect(model.allTasks()).toEqual([]);
 
