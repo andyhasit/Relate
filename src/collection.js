@@ -115,7 +115,6 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseContainer)
     return $q.all(childDeletions).then(function() {
       self.__db.remove(item).then(function (result) {
         delete self.__items[item._id];
-        deferred.resolve();
       }, util.promiseFailed);
     }, util.promiseFailed);
   };

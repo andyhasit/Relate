@@ -91,94 +91,23 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
     var action = (self.__cascadeDelete)?
         function(childItem) {return self.__childCollection.deleteItem(childItem)} :
         function(childItem) {return self.setChildParent(childItem, null)};
-    // works with
-    //action = function(childItem){return $q.when($q.when($q.when(childItem._id)))};
     action = function(childItem) {
       return self.__childCollection.deleteItem(childItem);
     }
-    var children = self.getChildren(parentItem);
+    var children = self.getChildren(parentItem).slice(); //imortant!
     return $q.all(children.map(action)).then(function() {
       delete self.__itemChildren[parentItem._id];
       return $q.when(true);
     }, util.promiseFailed);
   };
 
-  def.__respondToParentDeletedTemp = function (parentItem)     {var self = this;
-    var deferred = $q.defer();
-    var action = (self.__cascadeDelete)?
-        function(childItem) {return self.__childCollection.deleteItem(childItem)} :
-        function(childItem) {return self.setChildParent(childItem, null)};
-    // works with
-    //action = function(childItem){return $q.when($q.when($q.when(childItem._id)))};
-    var children = self.getChildren(parentItem);
-    c.log(children.map(function(childItem){return childItem._id}));
-
-    var cascadedActionPromises = children.map(function(childItem) {
-      c.log('loop on ' + childItem._id);
-      return action(childItem);
-    });
-    c.log(cascadedActionPromises);
-    /*
-    var cascadedActionPromises = children.map(action);
-    var cascadedActionPromises = children.map(function(childItem) {
-      var p = action(childItem);
-      p.then(function(result) {
-        c.log("promise success");
-      });
-      return p;
-    });
-      function (childItem) {
-        c.log('processing ' + childItem._id);
-        return action(childItem);
-      });
-
-
-    angular.forEach(self.getChildren(parentItem), function (childItem) {
-      c.log('Found child ' + childItem._id);
-      d = myAction(childItem);
-      d.then(function(r) {c.log('22' + r)}, function(r) {c.log('55' + r)});
-      c.log(d);
-      //cascadedmyActionPromises.push(myAction(childItem));
-    });
-    */
-    //Note that __parentDeleteInProgress will be set to false before promises are all resolved (non critical)
-    //self.__parentDeleteInProgress.set(item, false);
-    $q.all(cascadedActionPromises).then(function() {
-      delete self.__itemChildren[parentItem._id];
-      deferred.resolve();
-    }, util.promiseFailed);
-    return deferred.promise;
-  };
-
-
-  //self.__parentDeleteInProgress.set(item, true);
-
   def.__respondToChildDeleted = function (childItem)     {var self = this;
-    //return $q.when(true);
-    //var deferred = $q.defer();
     var parentItem = self.getParent(childItem);
-                                                          c.log(childItem._id)
     if (parentItem) {
-      c.log(parentItem);
       util.removeFromArray(self.__itemChildren[parentItem._id], childItem);
     }
     delete self.__itemParent[childItem._id];
     return $q.when(true);
-    /*
-    var childDeletions = [];
-    childDeletions.push(self.itemParentRegister.respondToChildDeleted(item));
-    This is to prevent many calls to unlinking children of a parent when the parent will
-    be deleted anyway. Just to save on db writes.
-
-    if (parentItem && !self.__parentDeleteInProgress.getItem(parentItem)) {
-      childDeletions.push(self.itemChildrenRegister.respondToChildDeleted(item));
-    }
-    $q.all(childDeletions).then(function() {
-      deferred.resolve();
-    });
-    */
-    deferred.resolve();
-    return deferred.promise;
   };
 
   return ParentChildRelationship;
