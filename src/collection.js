@@ -1,6 +1,6 @@
 
 angular.module('Relate').factory('Collection', function(util, $q, BaseContainer) {
-  
+
   var Collection = function(db, singleItemName, fieldNames, options)    {var self = this;
     var options = options || {};
     self.itemName = singleItemName;
@@ -33,7 +33,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseContainer)
     self.__items[doc._id] = item;
     return item;
   };
-  
+
   def.getAccessFunctionDefinitions = function()    {var self = this;
     var capitalize = util.capitalizeFirstLetter,
         buildFunc = util.createAccessFunctionDefinition,
@@ -46,11 +46,11 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseContainer)
       buildFunc('all' + plural, self.allItems, false),
     ]
   };
-  
+
   def.getItem = function(id)    {var self = this;
     return self.__items[id];
   };
-  
+
   def.allItems = function()    {var self = this;
     return Object.keys(self.__items).map(function(i){
       return self.__items[i];
@@ -82,7 +82,7 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseContainer)
     }
     return util.filterIndex(self.__items, test);
   };
-  
+
   def.newItem = function(data)    {var self = this;
     if(data === undefined) {
       throw 'newItem expects an object as its first argument.'
@@ -118,8 +118,8 @@ angular.module('Relate').factory('Collection', function(util, $q, BaseContainer)
       self.__db.remove(item).then(function (result) {
         delete self.__items[item._id];
         deferred.resolve();
-      });
-    });
+      }, util.promiseFailed);
+    }, util.promiseFailed);
     return deferred.promise;
   };
 

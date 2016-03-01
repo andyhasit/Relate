@@ -1,7 +1,7 @@
 function capitalizeFirstLetter(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
-  
+
 /*
   Synchronously creates an item, to make writing tests cleaner.
   Requires model and $rootScope to be global, which isn't a problem in a test environment.
@@ -14,23 +14,23 @@ function newItem(type, data){
   flush();
   return item;
 }
- 
+
 function flush() {
   $rootScope.$apply();
 }
-  
+
 pretty = function(obj) {
   console.log(JSON.stringify(obj, null, 2));
 };
 
 angular.module('PouchFake', []).factory('FakeDb', function($q) {
-  
+
   var FakeDb = function()  {var self = this;
     self.__docs = {};
     self.__idBank = {};
   };
   var def = FakeDb.prototype;
-  
+
   def.__newId = function(type)  {var self = this;
     if (self.__idBank[type] === undefined) {
       self.__idBank[type] = 0;
@@ -55,7 +55,7 @@ angular.module('PouchFake', []).factory('FakeDb', function($q) {
       self.__docs[id] = doc;
     });
   };
-  
+
   def.post = function(data) {var self = this;
     var doc = angular.copy(data);
     var id = data._id || self.__newId(doc.type);
@@ -69,12 +69,14 @@ angular.module('PouchFake', []).factory('FakeDb', function($q) {
         }
     );
   };
-  
+
   def.extractRev = function(str) {
     return parseInt(str.substr(0, str.indexOf('-')));
   }
-  
+
   def.put = function(data) {var self = this;
+    //c.log('DB PUT');
+    //c.log(data);
     var doc = angular.copy(data);
     var id = doc._id;
     var newRev = self.extractRev(doc._rev) + 1 + "-" + id;
@@ -87,7 +89,7 @@ angular.module('PouchFake', []).factory('FakeDb', function($q) {
         }
     );
   };
-  
+
   def.put_clone = function(data) {var self = this;
     var doc = angular.copy(data);
     var id = doc._id;
@@ -101,7 +103,7 @@ angular.module('PouchFake', []).factory('FakeDb', function($q) {
         }
     );
   };
-  
+
   def.remove = function(data) {var self = this;
     var doc = angular.copy(data);
     var id = doc._id;
@@ -116,13 +118,13 @@ angular.module('PouchFake', []).factory('FakeDb', function($q) {
         }
     );
   };
-  
+
   def.get = function(id) {var self = this;
     return $q.when(self.__docs[id]);
   };
-  
+
   def.allDocs = function(id) {var self = this;
-    var doc, 
+    var doc,
         rows =  Object.keys(self.__docs).map(function(key) {
           doc = self.__docs[key];
           return {id: doc._id, doc: doc};
@@ -134,7 +136,7 @@ angular.module('PouchFake', []).factory('FakeDb', function($q) {
         };
     return $q.when(data);
   };
-  
+
   /*
   exampleData = {
     "offset": 0,
@@ -160,7 +162,7 @@ angular.module('PouchFake', []).factory('FakeDb', function($q) {
    }]
   };
   */
-    
+
   return FakeDb;
 });
 

@@ -86,23 +86,55 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
     }
   };
 
+  def.__respondToParentDeletedTemp = function (parentItem)     {var self = this;
+    var action = (self.__cascadeDelete)?
+        function(childItem) {return self.__childCollection.deleteItem(childItem)} :
+        function(childItem) {return self.setChildParent(childItem, null)};
+    // works with
+    //action = function(childItem){return $q.when($q.when($q.when(childItem._id)))};
+    var children = self.getChildren(parentItem);
+    return $q.all(children.map(action)).then(function() {
+      delete self.__itemChildren[parentItem._id];
+      return $q.when(true);
+    }, util.promiseFailed);
+  };
+
   def.__respondToParentDeleted = function (parentItem)     {var self = this;
     var deferred = $q.defer();
-    var cascadedActionPromises = [];
-c.log(self.__cascadeDelete);
-    var action = (self.__cascadeDelete === true)?
+    var action = (self.__cascadeDelete)?
         function(childItem) {return self.__childCollection.deleteItem(childItem)} :
-        function(childItem) {return self.setChildParent(childItem, null)} ;
-    //self.__parentDeleteInProgress.set(item, true);
-    cascadedActionPromises = self.getChildren(parentItem).map(function (childItem) {return action(childItem)});
+        function(childItem) {return self.setChildParent(childItem, null)};
+    // works with
+    //action = function(childItem){return $q.when($q.when($q.when(childItem._id)))};
+    var children = self.getChildren(parentItem);
+    c.log(children.map(function(childItem){return childItem._id}));
+
+    var cascadedActionPromises = children.map(function(childItem) {
+      c.log('loop on ' + childItem._id);
+      return action(childItem);
+    });
     c.log(cascadedActionPromises);
     /*
+    var cascadedActionPromises = children.map(action);
+    var cascadedActionPromises = children.map(function(childItem) {
+      var p = action(childItem);
+      p.then(function(result) {
+        c.log("promise success");
+      });
+      return p;
+    });
+      function (childItem) {
+        c.log('processing ' + childItem._id);
+        return action(childItem);
+      });
+
+
     angular.forEach(self.getChildren(parentItem), function (childItem) {
       c.log('Found child ' + childItem._id);
-      d = action(childItem);
+      d = myAction(childItem);
       d.then(function(r) {c.log('22' + r)}, function(r) {c.log('55' + r)});
       c.log(d);
-      //cascadedActionPromises.push(action(childItem));
+      //cascadedmyActionPromises.push(myAction(childItem));
     });
     */
     //Note that __parentDeleteInProgress will be set to false before promises are all resolved (non critical)
@@ -110,12 +142,14 @@ c.log(self.__cascadeDelete);
     $q.all(cascadedActionPromises).then(function() {
       delete self.__itemChildren[parentItem._id];
       deferred.resolve();
-    });
+    }, util.promiseFailed);
     return deferred.promise;
   };
 
+
+  //self.__parentDeleteInProgress.set(item, true);
+
   def.__respondToChildDeleted = function (childItem)     {var self = this;
-    c.log('del child ' + childItem._id);
     //var deferred = $q.defer();
     var parentItem = self.getParent(childItem);
     if (parentItem) {

@@ -1,6 +1,6 @@
 
 angular.module('Relate').service('model', function($q, Collection, ParentChildRelationship, ManyToManyRelationship) {
-  
+
   var self = this,
       __db,
       __loadQuery,
@@ -8,7 +8,7 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
       __dbDocumentTypeLoaders = {},
       __lastPromiseInQueue = $q.when(),
       __relationshipDefinitionFunctions = {};
-  
+
   self.initialize = function(db, query) {
     __db = db;
     __loadQuery = query || function() {
@@ -18,7 +18,7 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
       });
     }
   };
-  
+
   var __dataReady;
   self.dataReady = function (){
     if (__dataReady === undefined) {
@@ -29,7 +29,7 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     }
     return __dataReady.promise;
   };
-  
+
   self.printInfo = function (){
     angular.forEach(__containers, function(container) {
       angular.forEach(container.getAccessFunctionDefinitions(), function(accessFunc) {
@@ -37,15 +37,15 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
       });
     });
   };
-  
+
   /************* MODEL DEFINITION FUNCTIONS *************/
-  
+
   self.collection = function(singleItemName, fieldNames, options){
     var container = new Collection(__db, singleItemName, fieldNames, options);
     __registerContainer(container);
     return container;
   };
-  
+
   self.join = function(firstCollection, secondCollection, options){
     var options = options || {},
         container,
@@ -69,7 +69,7 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     __registerContainer(container);
     return container;
   };
-  
+
   __registerContainer = function(container) {
     var name = container.name;
     if (__containers[name] !== undefined) {
@@ -79,38 +79,38 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     __registerDocumentTypeLoader(container);
     __createAccessFunctions(container);
   };
-   
+
   /************* COLLECTION ACCESS FUNCTIONALITY ************
-  
+
     __createAccessFunctions() creates methods like:
-  
+
       model.newTask({})
       model.getProjectTasks(project)
-  
+
     Query functions (getX, findX) return directly. Data changing functions (all other prefixed) return promises.
-    
+
     Query data may be dirty while a promise is waiting to complete, so you need to do this:
-    
+
     model.newTask({}).then(function(){
       angular.copy($scope.tasks, model.getProjectTasks($scope.project));
     });
-    
+
     Data changing functions are queued internally, so you can do this.
     model.newTask({});
     model.newTask({});
     model.newTask({}).then(function(){
       angular.copy($scope.tasks, model.getProjectTasks($scope.project));
     });
-    
+
   */
   self.saveItem = function(item) {
-    __containers[item.type].saveItem(item);
+    return __containers[item.type].saveItem(item);
   };
-  
+
   self.deleteItem = function(item) {
-    __containers[item.type].deleteItem(item);
+    return __containers[item.type].deleteItem(item);
   };
-  
+
   function __createAccessFunctions(container){
     angular.forEach(container.getAccessFunctionDefinitions(), function(accessFunc) {
       var func, fnName = accessFunc.ModelFunctionName;
@@ -125,13 +125,13 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
       self[fnName] = func;
     });
   };
-  
+
   function __getNonQueuedFunction(container, containerFunction){
     return function() {
       return containerFunction.apply(container, arguments);
     }
   };
-  
+
   function __getQueuedFunction(container, containerFunction){
     return function() {
       var originalArgs = arguments;
@@ -147,9 +147,9 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
   };
 
   /************* INITIAL LOADING FUNCTIONALITY *************/
-  
+
   function __registerDocumentTypeLoader(container) {
-    /* If container has field 'dbDocumentType' then every document whose 'type' field matches that 
+    /* If container has field 'dbDocumentType' then every document whose 'type' field matches that
     will be passed to the container's loadDocumentFromDb() function at loading.
     */
     var dbDocumentType = container.dbDocumentType;
@@ -162,7 +162,7 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
       }
     }
   };
-  
+
   function __initializeModel(){
     var defer = $q.defer();
     var loadQuery = __loadQuery();
@@ -177,7 +177,7 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
     });
     return defer.promise;
   };
-  
+
   function __addDocumentToCollection(document){
     var dbDocumentType = document.type;
     if (dbDocumentType) {
@@ -192,12 +192,12 @@ angular.module('Relate').service('model', function($q, Collection, ParentChildRe
       console.log('Could not load document \"' + document._id + '\" as it has no \"type\" field.');
     }
   };
-  
+
   function __postInitialLoading() {
     angular.forEach(__containers, function(container) {
       container.postInitialLoading();
     });
   }
-  
+
 });
 
