@@ -48,7 +48,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
         self.__itemChildren[parentId].push(childItem);
       }
     });
-  }
+  };
 
   def.getParent = function (childItem)    {var self = this;
     return self.__itemParent[childItem._id] || null;
@@ -82,8 +82,6 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
       return self.__respondToParentDeleted(item);
     } else if (collection === self.__childCollection) {
       return self.__respondToChildDeleted(item);
-    } else {
-      throw "Called respondToItemDeleted from wrong collection."
     }
   };
 
@@ -91,10 +89,7 @@ angular.module('Relate').factory('ParentChildRelationship', function($q, BaseCon
     var action = (self.__cascadeDelete)?
         function(childItem) {return self.__childCollection.deleteItem(childItem)} :
         function(childItem) {return self.setChildParent(childItem, null)};
-    action = function(childItem) {
-      return self.__childCollection.deleteItem(childItem);
-    }
-    var children = self.getChildren(parentItem).slice(); //imortant!
+    var children = self.getChildren(parentItem).slice(); //slice() is imortant!
     return $q.all(children.map(action)).then(function() {
       delete self.__itemChildren[parentItem._id];
       return $q.when(true);
