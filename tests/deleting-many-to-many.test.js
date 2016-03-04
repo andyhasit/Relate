@@ -1,5 +1,5 @@
 
-describe('linking many to many', function() {
+describe('deleting many to many', function() {
 
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
@@ -25,17 +25,24 @@ describe('linking many to many', function() {
     project2 = newItem('project');
     tag1 = newItem('tag');
     tag2 = newItem('tag');
+    tag3 = newItem('tag');
 
     model.addProjectTag(project1, tag2);
+    model.addProjectTag(project1, tag3);
     flush();
 
     expect(model.isProjectLinkedToTag(project1, tag2)).toEqual(true);
-    expect(model.getProjectTags(project1)).toEqual([tag2]);
+    expect(model.isProjectLinkedToTag(project1, tag3)).toEqual(true);
+    expect(model.getProjectTags(project1)).toEqual([tag2, tag3]);
+    expect(model.getTagProjects(tag1)).toEqual([]);
     expect(model.getTagProjects(tag2)).toEqual([project1]);
+    expect(model.getTagProjects(tag3)).toEqual([project1]);
 
     //now delete.
     model.deleteItem(project1);
     flush();
+    expect(model.getTagProjects(tag2)).toEqual([]);
+    expect(model.getTagProjects(tag3)).toEqual([]);
     
   });
 

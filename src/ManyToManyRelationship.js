@@ -139,13 +139,28 @@ angular.module('Relate').factory('ManyToManyRelationship', function($q, BaseCont
   
   def.respondToItemDeleted = function (item, collection)     {var self = this;
   //TODO...
+    var opposites, itemIsFromRight;
     if (collection === self.__rightCollection) {
-      return self.__respondToParentDeleted(item);
+      itemIsFromRight = true;
+      opposites = self.getRightLefts(item);
     } else if (collection === self.__leftCollection) {
-      return self.__respondToChildDeleted(item);
-    } else {
-      throw "Called respondToItemDeleted from wrong collection."
+      itemIsFromRight = false;
+      opposites = self.getLeftRights(item);
     }
+    //
+    opposites = opposites.slice();
+    var operations = [];
+    angular.forEach(opposites, function(oppositeItem) {
+      if (itemIsFromRight) {
+        var leftItem = oppositeItem;
+        var rightItem = item;
+      } else {
+        var leftItem = item;
+        var rightItem = oppositeItem;
+      }
+      operations.push(self.removeLink(leftItem, rightItem));
+    });
+    return $q.all(operations);
   };
   
   /*
