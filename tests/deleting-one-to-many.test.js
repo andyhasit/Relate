@@ -1,5 +1,5 @@
 
-describe('deleting', function() {
+describe('deleting one to many', function() {
 
   beforeEach(module('Relate'));
   beforeEach(module('PouchFake'));
@@ -140,10 +140,3 @@ describe('deleting', function() {
   });
 
 });
-/*
-
-tagProjectJoin = model.join('project', 'tag', {type: 'manyToMany'});
-
-    tagCollection = model.collection('tag', ['name']);
-
-*/
